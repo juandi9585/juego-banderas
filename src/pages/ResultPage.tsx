@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useGame } from '../features/game/useGame';
+import { computeScore } from '../features/game/score';
 import { FlagImage } from '../components/FlagImage';
 import { Button } from '../components/Button';
 import styles from './ResultPage.module.css';
@@ -24,6 +25,10 @@ export function ResultPage() {
   const accuracy =
     result.total === 0 ? 0 : Math.round((result.correctCount / result.total) * 100);
 
+  // Puntaje informativo en el casual (§4). Misma función pura que usará el
+  // competitivo; aquí no alimenta ranking ni récords.
+  const score = computeScore(result);
+
   // Preguntas falladas (para repasar): país correcto de cada fallo.
   const failed = state.questions.filter(
     (_question, i) => result.answers[i]?.correct === false,
@@ -42,7 +47,19 @@ export function ResultPage() {
         </p>
       </section>
 
-      {/* TODO(gamificación): hueco reservado para el panel de puntos/récord. */}
+      {/* Puntaje informativo (§4). El récord/ranking por categoría llegará con el
+          modo competitivo (RecordsProvider + submit(), doc §5). */}
+      <section className={styles.scorePanel} aria-label="Puntaje de la ronda">
+        <p className={styles.scoreTag}>Puntaje</p>
+        <p className={styles.scorePoints}>
+          {score.points.toLocaleString('es-ES')}
+        </p>
+        {score.maxStreak >= 2 && (
+          <p className={styles.streak}>
+            Mejor racha: {score.maxStreak} seguidas
+          </p>
+        )}
+      </section>
 
       {failed.length > 0 && (
         <section aria-label="Países para repasar">

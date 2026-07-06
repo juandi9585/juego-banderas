@@ -28,7 +28,8 @@ export function GameProvider({ children, countries = [] }: GameProviderProps) {
   );
 
   const answerCurrent = useCallback((value: string) => {
-    dispatch({ type: 'ANSWER', value });
+    // `at` = reloj de pared al responder; el reducer calcula elapsedMs (§4.3).
+    dispatch({ type: 'ANSWER', value, at: Date.now() });
   }, []);
 
   const next = useCallback(() => {
@@ -59,6 +60,10 @@ export function GameProvider({ children, countries = [] }: GameProviderProps) {
             total: state.questions.length,
             correctCount: state.answers.filter((a) => a?.correct).length,
             answers: state.answers,
+            durationMs:
+              state.finishedAt != null && state.startedAt != null
+                ? state.finishedAt - state.startedAt
+                : undefined,
           }
         : null;
 

@@ -99,6 +99,15 @@ describe('Modo bandera → nombre (ronda completa)', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       `${correctCount} de ${total}`,
     );
+
+    // Panel de puntaje (informativo en casual): etiqueta "Puntaje" + cifra > 0.
+    // Con ≥ 1 acierto el puntaje es positivo (formato es-ES, p. ej. "1.350").
+    const puntajeTag = screen.getByText('Puntaje');
+    const puntos = Number(
+      (puntajeTag.nextElementSibling?.textContent ?? '').replace(/\D/g, ''),
+    );
+    expect(puntos).toBeGreaterThan(0);
+
     expect(screen.getByText('Para repasar')).toBeInTheDocument();
     for (const name of failedNames) {
       expect(screen.getByText(name)).toBeInTheDocument();

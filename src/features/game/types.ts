@@ -70,6 +70,14 @@ export interface AnswerRecord {
   correctCode: string;
   givenCode?: string; // MC: código elegido
   givenText?: string; // texto: entrada cruda del usuario
+  // ms desde que la pregunta quedó activa hasta responder (§4.3 competitivo).
+  // La hoja de datos curiosos entre preguntas NO cuenta (el reloj se reinicia
+  // en NEXT). Ausente si no había base temporal. Fuente del bonus de velocidad.
+  elapsedMs?: number;
+  // COSTURA del competitivo futuro (§4.3): el countdown de 10 s lo marcará al
+  // agotarse (fallo automático). HOY NADIE lo escribe (el casual no tiene
+  // timeout); se declara aquí para no reescribir el tipo al implementarlo.
+  timedOut?: boolean;
 }
 
 export type GameStatus = 'idle' | 'playing' | 'finished';
@@ -83,6 +91,11 @@ export interface GameState {
   // --- Costuras de gamificación (declaradas, sin usar en MVP; ver plan §5) ---
   startedAt?: number;
   finishedAt?: number;
+  // Timestamp de cuándo la pregunta ACTUAL quedó visible. Se marca en
+  // START/RESTART y en NEXT (al avanzar). La hoja de datos curiosos NO cuenta
+  // porque el reloj se reinicia en NEXT, no al abrir la hoja. Base para
+  // AnswerRecord.elapsedMs (§4.3).
+  questionStartedAt?: number;
 }
 
 export interface GameResult {
@@ -90,6 +103,8 @@ export interface GameResult {
   total: number;
   correctCount: number;
   answers: AnswerRecord[];
+  // finishedAt − startedAt (si ambos existen). Insumo de Score.durationMs (§4.4).
+  durationMs?: number;
   // derivado en UI: accuracy = correctCount / total
 }
 
