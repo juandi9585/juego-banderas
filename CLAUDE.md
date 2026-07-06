@@ -20,7 +20,10 @@ Modos de juego (todos incluidos):
 1. **Bandera → nombre** — elige el país correcto entre 4 opciones.
 2. **Nombre → bandera** — elige la bandera correcta entre 4.
 3. **Escribir el nombre** — input con tolerancia a tildes/mayúsculas/espacios.
-4. **Filtro por continente/región** — acota las rondas por zona.
+4. **Filtro por categorías** — selección múltiple sobre el catálogo compartido
+   `src/features/game/categories.ts` (continentes + agrupaciones como "América");
+   el futuro modo competitivo (ver `docs/competitivo.md`) añade categorías a ese
+   mismo catálogo y el juego casual las hereda.
 
 Datos culturales: **ficha tras responder** (durante el juego) **+ modo Explorar** (enciclopedia navegable).
 

@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../../../App';
-import { findCountry } from '../../../data/dataset';
+import { countries, findCountry } from '../../../data/dataset';
+import {
+  GAME_CATEGORIES,
+  filterByCategories,
+  type CategoryId,
+} from '../categories';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tests de INTEGRACIÓN sobre la App real (dataset completo, router, provider).
@@ -267,6 +272,98 @@ describe('Hoja nota de campo (bottom sheet)', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
+  });
+});
+
+describe('Selector de categorías (Home)', () => {
+  it('secuencia de aria-pressed y hints: Todos → Europa → +Oceanía → quitar → todas colapsa', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const group = screen.getByRole('group', { name: 'Categorías' });
+    const chip = (name: string | RegExp) => within(group).getByRole('button', { name });
+    // Hint calculado desde el dataset importado (NO hardcodeado).
+    const hint = (ids: CategoryId[]) =>
+      `${filterByCategories(ids, countries).length} países disponibles`;
+
+    // Inicial: "Todos" encendido y el pool completo.
+    expect(chip('Todos')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(hint([]))).toBeInTheDocument();
+
+    // Click "Europa": Europa on, Todos off, hint solo de Europa.
+    await user.click(chip(/^Europa$/));
+    expect(chip(/^Europa$/)).toHaveAttribute('aria-pressed', 'true');
+    expect(chip('Todos')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText(hint(['europa']))).toBeInTheDocument();
+
+    // + "Oceanía": ambas on, hint = unión.
+    await user.click(chip(/^Oceanía$/));
+    expect(chip(/^Oceanía$/)).toHaveAttribute('aria-pressed', 'true');
+    expect(chip(/^Europa$/)).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText(hint(['europa', 'oceania']))).toBeInTheDocument();
+
+    // Des-clickear ambas: "Todos" se reenciende y vuelve el pool completo.
+    await user.click(chip(/^Europa$/));
+    await user.click(chip(/^Oceanía$/));
+    expect(chip('Todos')).toHaveAttribute('aria-pressed', 'true');
+    expect(chip(/^Europa$/)).toHaveAttribute('aria-pressed', 'false');
+    expect(chip(/^Oceanía$/)).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText(hint([]))).toBeInTheDocument();
+
+    // Seleccionar las 7 categorías colapsa a "Todos" (todas apagadas).
+    for (const cat of GAME_CATEGORIES) {
+      await user.click(within(group).getByRole('button', { name: cat.label }));
+    }
+    expect(chip('Todos')).toHaveAttribute('aria-pressed', 'true');
+    for (const cat of GAME_CATEGORIES) {
+      expect(within(group).getByRole('button', { name: cat.label })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+    }
+  });
+
+  it('ronda con la unión de dos categorías: cada país cae en Oceanía ∪ América del Sur hasta /resultado', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const group = screen.getByRole('group', { name: 'Categorías' });
+    await user.click(within(group).getByRole('button', { name: 'Oceanía' }));
+    await user.click(within(group).getByRole('button', { name: 'América del Sur' }));
+
+    await user.click(screen.getByRole('button', { name: 'Empezar' }));
+
+    const union = new Set(['Oceanía', 'América del Sur']);
+    const total = 10;
+    for (let i = 0; i < total; i++) {
+      expect(screen.getByRole('progressbar')).toHaveAttribute(
+        'aria-valuenow',
+        String(i + 1),
+      );
+
+      const heroImg = screen.getByRole('img', { name: 'Bandera a identificar' });
+      const country = findCountry(codeFromImg(heroImg))!;
+      // El país preguntado pertenece a la unión seleccionada.
+      expect(union.has(country.continent)).toBe(true);
+
+      const main = screen.getByRole('main');
+      const options = within(main)
+        .getAllByRole('button')
+        .filter((b) => b.getAttribute('aria-label') !== 'Salir del juego');
+      expect(options).toHaveLength(4);
+      const correct = options.find((b) => b.textContent === country.name)!;
+      await user.click(correct);
+
+      const nextLabel = i === total - 1 ? 'Ver resultado' : 'Siguiente';
+      await user.click(screen.getByRole('button', { name: nextLabel }));
+    }
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      `${total} de ${total}`,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Jugar otra vez' }),
+    ).toBeInTheDocument();
   });
 });
 

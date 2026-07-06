@@ -235,6 +235,13 @@ Refinamientos respecto a `CLAUDE.md`:
   (coincide con el nombre de archivo en `public/flags/`; ver Riesgo R8).
 
 ### 3.2 Tipos del motor de juego — `src/features/game/types.ts` (frontend-engineer)
+
+> **Anotación (iteración 3):** el filtro del juego pasó de `continent: ContinentFilter` a
+> `categories: CategoryId[]` — ids canónicos del catálogo compartido
+> `src/features/game/categories.ts` (`GAME_CATEGORIES`), con `[]` = todos. `ContinentFilter`
+> sobrevive solo para Explorar. El catálogo es la costura del modo competitivo
+> (ver `docs/competitivo.md`): sus categorías se añaden a ese mismo array y el casual las hereda.
+
 ```ts
 import type { Country, Continent } from '../../data/countries';
 

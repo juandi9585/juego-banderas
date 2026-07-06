@@ -86,7 +86,7 @@ describe('buildQuestion', () => {
 describe('buildQuiz', () => {
   const baseConfig: QuizConfig = {
     mode: 'flag-to-name',
-    continent: 'all',
+    categories: [],
     questionCount: 10,
   };
 
@@ -117,14 +117,30 @@ describe('buildQuiz', () => {
     expect(quiz).toHaveLength(mockCountries.length);
   });
 
-  it('filtra por continente: solo respuestas de ese continente', () => {
+  it('filtra por categoría: solo respuestas de ese continente', () => {
     const quiz = buildQuiz(
       mockCountries,
-      { ...baseConfig, continent: 'Europa', questionCount: 20 },
+      { ...baseConfig, categories: ['europa'], questionCount: 20 },
       seededRng(2),
     );
     expect(quiz).toHaveLength(5); // 5 países europeos en el mock
     expect(quiz.every((q) => q.country.continent === 'Europa')).toBe(true);
+  });
+
+  it('unión de categorías: respuestas y opciones dentro de Europa ∪ Oceanía', () => {
+    const union = new Set(['Europa', 'Oceanía']);
+    const quiz = buildQuiz(
+      mockCountries,
+      { ...baseConfig, categories: ['europa', 'oceania'], questionCount: 20 },
+      seededRng(2),
+    );
+    // 5 europeos + 1 oceánico en el mock.
+    expect(quiz).toHaveLength(6);
+    for (const q of quiz) {
+      expect(union.has(q.country.continent)).toBe(true);
+      // Los distractores salen del pool ya filtrado => también en la unión.
+      expect(q.options!.every((o) => union.has(o.continent))).toBe(true);
+    }
   });
 
   it('asigna ids estables y únicos por índice', () => {

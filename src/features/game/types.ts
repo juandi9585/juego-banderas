@@ -11,10 +11,14 @@
 // `Country`/`Continent` de este archivo y los datos de `src/data/dataset.ts`.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// `import type` (solo tipos, se borra en runtime) evita un ciclo real con
+// `categories.ts`, que a su vez importa `Country` de este módulo.
+import type { CategoryId } from './categories';
+
 /** Taxonomía de continentes en español (6 valores; América dividida). */
 export type Continent =
   | 'África'
-  | 'América del Norte'
+  | 'América del Norte y Centro'
   | 'América del Sur'
   | 'Asia'
   | 'Europa'
@@ -37,11 +41,15 @@ export type Country = {
 
 export type GameMode = 'flag-to-name' | 'name-to-flag' | 'type-name';
 
+// Filtro de selección SIMPLE por continente ('all' = todos). Hoy solo lo usa
+// Explorar; el juego filtra por `QuizConfig.categories` (selección múltiple).
 export type ContinentFilter = Continent | 'all';
 
 export interface QuizConfig {
   mode: GameMode;
-  continent: ContinentFilter; // 'all' = todos los continentes
+  // Ids canónicos del catálogo de categorías (orden del catálogo, sin
+  // duplicados); [] = todas las categorías (pool completo).
+  categories: CategoryId[];
   questionCount: number; // preset o total del pool filtrado ("todas")
 }
 

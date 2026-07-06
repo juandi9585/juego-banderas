@@ -8,6 +8,7 @@ import type {
   QuizQuestion,
 } from './types';
 import { OPTIONS_PER_QUESTION } from './constants';
+import { filterByCategories } from './categories';
 import { shuffle, sample, type RNG } from '../../lib/random';
 import { matchesCountryName } from '../../lib/text';
 
@@ -79,19 +80,17 @@ export function buildQuestion(
 }
 
 /**
- * Construye una ronda completa. Filtra el pool por continente, elige respuestas
- * SIN reemplazo (no se repite país) y limita al tamaño del pool si hace falta.
- * Los distractores salen del pool YA filtrado (coherente con el filtro).
+ * Construye una ronda completa. Filtra el pool por las categorías elegidas
+ * (unión; `[]` = todos), elige respuestas SIN reemplazo (no se repite país) y
+ * limita al tamaño del pool si hace falta. Los distractores salen del pool YA
+ * filtrado (coherente con el filtro).
  */
 export function buildQuiz(
   pool: readonly Country[],
   config: QuizConfig,
   rng: RNG = Math.random,
 ): QuizQuestion[] {
-  const filtered =
-    config.continent === 'all'
-      ? pool.slice()
-      : pool.filter((c) => c.continent === config.continent);
+  const filtered = filterByCategories(config.categories, pool);
 
   const count = Math.min(config.questionCount, filtered.length);
   const answers = sample(filtered, count, rng);

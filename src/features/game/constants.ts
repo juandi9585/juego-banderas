@@ -10,7 +10,7 @@ export type QuestionCountPreset = (typeof QUESTION_COUNT_PRESETS)[number];
 // 6 continentes (América dividida). Debe coincidir con la union `Continent`.
 export const CONTINENTS: Continent[] = [
   'África',
-  'América del Norte',
+  'América del Norte y Centro',
   'América del Sur',
   'Asia',
   'Europa',

@@ -34,7 +34,7 @@ const requiredFields = ["code", "name", "continent", "capital", "flag", "facts"]
 // Debe coincidir con la union `Continent` de src/features/game/types.ts.
 const validContinents = new Set([
   "África",
-  "América del Norte",
+  "América del Norte y Centro",
   "América del Sur",
   "Asia",
   "Europa",

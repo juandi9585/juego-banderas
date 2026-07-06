@@ -5,14 +5,15 @@ import { countries, TOTAL_COUNTRIES } from '../data/dataset';
 import { FlagImage } from '../components/FlagImage';
 import { Button } from '../components/Button';
 import { SegmentedControl } from '../components/SegmentedControl';
-import { ContinentPicker } from '../components/ContinentPicker';
+import { CategoryMultiPicker } from '../components/CategoryMultiPicker';
 import {
   DEFAULT_QUESTION_COUNT,
   MODE_LABELS,
   QUESTION_COUNT_PRESETS,
   type QuestionCountPreset,
 } from '../features/game/constants';
-import type { ContinentFilter, GameMode } from '../features/game/types';
+import { filterByCategories, type CategoryId } from '../features/game/categories';
+import type { GameMode } from '../features/game/types';
 import styles from './HomePage.module.css';
 
 const MODE_OPTIONS = (Object.keys(MODE_LABELS) as GameMode[]).map((m) => ({
@@ -35,24 +36,22 @@ export function HomePage() {
   );
 
   const [mode, setMode] = useState<GameMode>('flag-to-name');
-  const [continent, setContinent] = useState<ContinentFilter>('all');
+  const [categories, setCategories] = useState<CategoryId[]>([]);
   const [countPreset, setCountPreset] = useState<QuestionCountPreset>(
     DEFAULT_QUESTION_COUNT,
   );
 
-  // Nº de países disponibles con el filtro elegido (para el hint del pool).
+  // Nº de países disponibles con las categorías elegidas (hint del pool).
+  // `[]` = todas → el pool completo.
   const poolSize = useMemo(
-    () =>
-      continent === 'all'
-        ? TOTAL_COUNTRIES
-        : countries.filter((c) => c.continent === continent).length,
-    [continent],
+    () => filterByCategories(categories, countries).length,
+    [categories],
   );
 
   function handleStart() {
     const questionCount =
       countPreset === 'all' ? Number.MAX_SAFE_INTEGER : countPreset;
-    startGame({ mode, continent, questionCount });
+    startGame({ mode, categories, questionCount });
     navigate('/jugar');
   }
 
@@ -86,8 +85,8 @@ export function HomePage() {
         </div>
 
         <div className={styles.field}>
-          <p className={styles.fieldLabel}>Continente</p>
-          <ContinentPicker value={continent} onChange={setContinent} />
+          <p className={styles.fieldLabel}>Categorías</p>
+          <CategoryMultiPicker value={categories} onChange={setCategories} />
         </div>
 
         <div className={styles.field}>

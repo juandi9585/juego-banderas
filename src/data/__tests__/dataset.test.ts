@@ -8,7 +8,7 @@ import type { Continent, QuizConfig } from '../../features/game/types';
 
 const CONTINENTS: Continent[] = [
   'África',
-  'América del Norte',
+  'América del Norte y Centro',
   'América del Sur',
   'Asia',
   'Europa',
@@ -48,6 +48,10 @@ describe('Integridad del dataset', () => {
     expect(byCont['Oceanía']).toBe(14);
     expect(Object.values(byCont).reduce((a, b) => a + b, 0)).toBe(194);
   });
+
+  it('Cuba está en el continente renombrado "América del Norte y Centro"', () => {
+    expect(findCountry('cu')?.continent).toBe('América del Norte y Centro');
+  });
 });
 
 describe('Integridad de las banderas (public/flags)', () => {
@@ -75,14 +79,14 @@ describe('Integridad de las banderas (public/flags)', () => {
   });
 });
 
-describe('Motor + dataset real: filtro por continente', () => {
-  const base: Omit<QuizConfig, 'continent'> = {
+describe('Motor + dataset real: filtro por categorías', () => {
+  const base: Omit<QuizConfig, 'categories'> = {
     mode: 'flag-to-name',
     questionCount: 1000,
   };
 
   it('una ronda filtrada por Oceanía solo pregunta países de Oceanía (14)', () => {
-    const quiz = buildQuiz(countries, { ...base, continent: 'Oceanía' });
+    const quiz = buildQuiz(countries, { ...base, categories: ['oceania'] });
     expect(quiz).toHaveLength(14);
     expect(quiz.every((q) => q.country.continent === 'Oceanía')).toBe(true);
     // Los distractores también salen del pool filtrado => todos de Oceanía.
@@ -91,10 +95,10 @@ describe('Motor + dataset real: filtro por continente', () => {
     }
   });
 
-  it('preset "todas" + "todos los continentes" genera 194 preguntas sin reventar', () => {
+  it('preset "todas" + todas las categorías genera 194 preguntas sin reventar', () => {
     const quiz = buildQuiz(countries, {
       ...base,
-      continent: 'all',
+      categories: [],
       questionCount: Number.MAX_SAFE_INTEGER,
     });
     expect(quiz).toHaveLength(194);

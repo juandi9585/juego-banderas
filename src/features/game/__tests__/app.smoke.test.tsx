@@ -17,7 +17,7 @@ describe('App (smoke)', () => {
       screen.getByRole('heading', { name: 'Banderas del mundo' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Empezar' })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Continente' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Categorías' })).toBeInTheDocument();
   });
 
   it('arranca una ronda, responde y muestra la nota de campo', async () => {

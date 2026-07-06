@@ -79,12 +79,12 @@ export const mockCountries: Country[] = [
     flag: '/flags/in.svg',
     facts: ['Es la democracia más poblada.'],
   },
-  // ── América del Norte (2; una con aliases) ────────────────────────────────
+  // ── América del Norte y Centro (2; una con aliases) ───────────────────────
   {
     code: 'us',
     name: 'Estados Unidos',
     officialName: 'Estados Unidos de América',
-    continent: 'América del Norte',
+    continent: 'América del Norte y Centro',
     region: 'América del Norte',
     capital: 'Washington D. C.',
     flag: '/flags/us.svg',
@@ -94,7 +94,7 @@ export const mockCountries: Country[] = [
   {
     code: 'mx',
     name: 'México',
-    continent: 'América del Norte',
+    continent: 'América del Norte y Centro',
     region: 'América Central',
     capital: 'Ciudad de México',
     flag: '/flags/mx.svg',
