@@ -169,38 +169,86 @@ afecta a categorías pequeñas y no rompe la equidad intra-categoría.
 
 ---
 
-## 4. Puntuación
+## 4. Puntuación — **[DECIDIDO 2026-07-06 con el usuario]**
 
-Función **pura** nueva, sin tocar el motor, alimentada por el `GameResult` existente:
+Sistema estilo Kahoot: **la velocidad da puntos reales** (un jugador rápido puede superar a otro
+con más aciertos), con **multiplicador de racha** y **límite duro de 10 s por pregunta en
+competitivo**. El puntaje se
+muestra **también en el casual** (informativo, sin ranking ni cronómetro visible).
+
+### 4.1 Fórmula por pregunta
+
+| Resultado | Puntos |
+|---|---|
+| Fallo o tiempo agotado | **0** (la racha se reinicia; nunca hay puntos negativos) |
+| Acierto | `round((100 + bonusVelocidad(t)) × multRacha)` |
+
+- **Base:** `100` puntos por acierto.
+- **Bonus de velocidad `bonusVelocidad(t)`** (t = ms desde que la pregunta es visible hasta responder):
+  - `t ≤ 2 000 ms` → **50** (ventana de gracia: leer 4 opciones toma ~2 s; no premia el tap ciego).
+  - `2 000 < t < 10 000` → decae lineal: `50 × (10 000 − t) / 8 000`.
+  - `t ≥ 10 000 ms` → **0**.
+- **Multiplicador de racha `multRacha`:** con `racha` = aciertos consecutivos contando el actual,
+  `multRacha = min(1 + 0.1 × (racha − 1), 1.5)` → ×1.0, ×1.1, ×1.2, ×1.3, ×1.4 y **×1.5 desde el
+  6.º acierto seguido**. Un fallo o timeout reinicia la racha a 0.
+- Redondeo con `Math.round` **por pregunta** → el total siempre es entero.
+- Puntos máximos por pregunta: `(100 + 50) × 1.5 = 225`.
+
+### 4.2 Cotas y ejemplos (25 preguntas)
+
+| Escenario | Puntaje |
+|---|---|
+| Partida perfecta (25 aciertos, todos ≤ 2 s) | **5 400** (900 en la rampa de racha + 20 × 225) |
+| 25 aciertos, todos lentos (sin bonus) | 3 600 |
+| 20 aciertos seguidos rápidos + 5 fallos | ~4 275 |
+| 13 aciertos alternados (racha nunca > 1), lentos | 1 300 |
+
+La velocidad y la racha pueden superar a quien tiene 1–2 aciertos más — decisión consciente del
+usuario (adrenalina y remontadas por encima de jerarquía estricta de conocimiento).
+
+### 4.3 Medición del tiempo
+
+- **`AnswerRecord.elapsedMs` (campo nuevo):** del instante en que la pregunta queda activa al tap /
+  submit. La hoja de datos curiosos entre preguntas **no cuenta**. Banderas locales y precacheadas →
+  el render no penaliza.
+- **Reloj de pared, sin pausas:** salir de la app a mitad de pregunta no congela el tiempo
+  (antitrampa básica).
+- **Competitivo:** cuenta regresiva **visible** de 10 s; al agotarse se registra fallo automático
+  (`timedOut: true` en el `AnswerRecord`) y se avanza. Partida completa ≤ ~4–5 min.
+- **Casual:** sin countdown ni timeout — se registra `elapsedMs` igual y aplica la misma fórmula
+  (con t ≥ 10 s el bonus simplemente es 0). El casual conserva su ritmo relajado.
+
+### 4.4 `computeScore` — función pura
 
 ```ts
-// src/features/game/score.ts (nuevo) — o dentro de engine.ts
+// src/features/game/score.ts (nuevo). Constantes exportadas para tests y UI.
+export const SCORE_BASE = 100;
+export const SCORE_SPEED_BONUS_MAX = 50;
+export const SCORE_GRACE_MS = 2_000;
+export const SCORE_TIME_LIMIT_MS = 10_000;
+export const SCORE_STREAK_STEP = 0.1;
+export const SCORE_STREAK_MAX_MULT = 1.5;
+
 export interface Score {
-  points: number;      // base: aciertos (0..total)
+  points: number;      // suma de §4.1 (entero)
   correct: number;     // = result.correctCount
   total: number;       // = result.total
   accuracy: number;    // correct / total
-  durationMs?: number; // opcional: finishedAt - startedAt (ver nota)
+  maxStreak: number;   // mejor racha de la partida
+  durationMs?: number; // finishedAt - startedAt (si está disponible)
 }
 
-export function computeScore(result: GameResult, durationMs?: number): Score;
+export function computeScore(result: GameResult): Score;
 ```
 
-- **Base = aciertos.** `points = result.correctCount` (0–25). Simple, transparente, sin constantes
-  mágicas.
-- **Desempate por tiempo, no bonus difuso.** El ranking ordena por `points` desc y, a igualdad, por
-  `durationMs` asc. Esto usa el tiempo (recompensa la rapidez) **sin** inventar una fórmula de bonus
-  arbitraria. `durationMs = finishedAt - startedAt`, ambos **ya declarados** en `GameState` (costura
-  §5 del plan). Como `GameResult` no los lleva, la `ResultPage` los calcula del estado y los pasa a
-  `computeScore` (o se añaden como campos opcionales a `GameResult`; decisión menor de la
-  implementación).
-- **Dónde se calcula.** `computeScore` es puro; se invoca en la `ResultPage` (el hueco `TODO`
-  reservado en el plan §5.5). La acción `ANSWER` del reducer sigue siendo el único punto donde, si
-  algún día se quiere puntuación en vivo (racha), se acumularía — hoy no hace falta.
+Itera `result.answers` **en orden** llevando la racha. Sirve para ambos modos: el casual la usa tal
+cual (sus `elapsedMs` largos dan bonus 0). Se invoca en la `ResultPage` (hueco `TODO` del plan §5.5).
+El puntaje casual es **solo informativo**: no alimenta ranking ni récords (categorías mezcladas y
+`questionCount` variable lo hacen incomparable por diseño).
 
-> Fórmula más rica (opcional, fuera del MVP): `points = correct * 100 + max(0, bonusTiempo)`. Se
-> descarta para el MVP por añadir constantes que habría que balancear. **[A ACORDAR]** si se quiere
-> bonus explícito o basta el desempate por tiempo.
+> Requisito de datos: la acción `ANSWER` del reducer (la costura de gamificación) pasa a registrar
+> `elapsedMs` y `timedOut`. El reducer marca el inicio de cada pregunta en `START`/`NEXT` y el
+> provider inyecta los timestamps (mismo patrón que `startedAt` hoy).
 
 ---
 
@@ -219,6 +267,7 @@ interface RecordEntry {
   points: number;
   correct: number;
   total: number;
+  maxStreak: number;
   durationMs: number;
   achievedAt: number;   // Date.now()
 }
@@ -229,8 +278,8 @@ interface RecordsContextValue {
 }
 ```
 
-- Se guarda **la mejor marca por `(categoryId, mode)`** (mejor `points`; desempate `durationMs`).
-  Opcional: histórico de N últimas partidas.
+- Se guarda **la mejor marca por `(categoryId, mode)`**: mejor `points`; a igualdad, más `correct`;
+  a igualdad, menor `durationMs`. Opcional: histórico de N últimas partidas.
 - Flujo: al terminar (`status === 'finished'`), la `ResultPage` llama a `computeScore`, luego a
   `submit(...)`, y muestra el resultado vs. el récord previo ("¡Nuevo récord!"). Esto **rellena el
   hueco `TODO`** de la `ResultPage`.
@@ -271,6 +320,10 @@ Objetivo potencial, **fuera del alcance actual**. Boceto conceptual:
   reutilización de `GamePage`; la `ResultPage` gana el panel de récord.
 
 ### Cambia (mínimo)
+- `AnswerRecord` gana `elapsedMs` (y `timedOut?`); la acción `ANSWER` los registra y `START`/`NEXT`
+  marcan el inicio de cada pregunta (timestamps inyectados por el provider, como `startedAt` hoy).
+  Necesario también para mostrar el puntaje en casual (§4).
+- UI de `GamePage` en competitivo: cuenta regresiva visible de 10 s con fallo automático al agotarse.
 - `QuizConfig` gana la dimensión de categoría. El competitivo usa **una** categoría
   (`categoryId: CategoryId`); el casual usa **varias**. La forma exacta del tipo la fija el
   frontend-engineer al crear `categories.ts` (probable: casual `categoryIds: CategoryId[]`,
@@ -302,7 +355,7 @@ Objetivo potencial, **fuera del alcance actual**. Boceto conceptual:
    Austral`?
 7. **Categorías pequeñas:** con < 25 países, ¿mantener 25 fijas con repetición en bloques
    (recomendado) o usar `min(25, pool)`?
-8. **Puntuación:** ¿basta **aciertos + desempate por tiempo** o se quiere un **bonus de tiempo**
-   explícito?
+8. ~~**Puntuación**~~ — **RESUELTA (2026-07-06):** sistema estilo Kahoot con bonus de velocidad,
+   racha ×1.1→×1.5, límite duro de 10 s en competitivo y puntaje informativo en casual. Ver §4.
 9. **Ranking online (Fase 2):** ¿es un **objetivo real**? Si lo es, ¿stack de DB e identidad de
    jugador? (hoy sin decidir).
