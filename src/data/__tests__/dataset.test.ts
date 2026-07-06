@@ -30,13 +30,13 @@ describe('Integridad del dataset', () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  it('cada país tiene código en minúsculas, capital, continente válido y 2–4 facts', () => {
+  it('cada país tiene código en minúsculas, capital, continente válido y 5–8 facts', () => {
     for (const c of countries) {
       expect(c.code).toMatch(/^[a-z]{2}$/);
       expect(c.capital.trim().length).toBeGreaterThan(0);
       expect(CONTINENTS).toContain(c.continent);
-      expect(c.facts.length).toBeGreaterThanOrEqual(2);
-      expect(c.facts.length).toBeLessThanOrEqual(4);
+      expect(c.facts.length).toBeGreaterThanOrEqual(5);
+      expect(c.facts.length).toBeLessThanOrEqual(8);
       c.facts.forEach((f) => expect(f.trim().length).toBeGreaterThan(0));
       expect(c.flag).toBe(`/flags/${c.code}.svg`);
     }

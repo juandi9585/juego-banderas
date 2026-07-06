@@ -62,10 +62,7 @@ describe('Modo bandera → nombre (ronda completa)', () => {
       const main = screen.getByRole('main');
       const options = within(main)
         .getAllByRole('button')
-        .filter((b) => {
-          const t = b.textContent ?? '';
-          return !t.includes('Siguiente') && !t.includes('Ver resultado');
-        });
+        .filter((b) => b.getAttribute('aria-label') !== 'Salir del juego');
       expect(options).toHaveLength(4);
       // La opción correcta SIEMPRE está entre las 4.
       expect(options.some((b) => b.textContent === correctName)).toBe(true);
@@ -130,9 +127,13 @@ describe('Modo nombre → bandera', () => {
     imgs.forEach((img) => expect(img.getAttribute('alt')).toBe(''));
 
     // Los 4 botones llevan aria-label con el nombre del país (accesibilidad).
+    // Se excluye el botón "Salir del juego" de la barra superior.
     const optionButtons = within(main)
       .getAllByRole('button')
-      .filter((b) => b.getAttribute('aria-label'));
+      .filter((b) => {
+        const label = b.getAttribute('aria-label');
+        return label && label !== 'Salir del juego';
+      });
     expect(optionButtons).toHaveLength(4);
 
     // Respondemos MAL a propósito: verifica marca incorrecta + resalte de la correcta.
@@ -214,6 +215,58 @@ describe('Modo escribir el nombre', () => {
     // La nota de campo muestra el país correcto.
     expect(within(screen.getByText('Nota de campo').closest('aside')!).getByText(correctName)).toBeInTheDocument();
     expect(input).toBeDisabled();
+  });
+});
+
+describe('Hoja nota de campo (bottom sheet)', () => {
+  /** Arranca la ronda por defecto y responde la 1.ª opción; deja la hoja abierta. */
+  async function openSheet(user: ReturnType<typeof userEvent.setup>) {
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Empezar' }));
+    const main = screen.getByRole('main');
+    const options = within(main)
+      .getAllByRole('button')
+      .filter((b) => b.getAttribute('aria-label') !== 'Salir del juego');
+    await user.click(options[0]);
+    return screen.getByRole('dialog');
+  }
+
+  it('abre un diálogo modal, el foco aterriza dentro y muestra exactamente 2 datos', async () => {
+    const user = userEvent.setup();
+    const dialog = await openSheet(user);
+
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    // Foco dentro de la hoja al abrirse (arregla el hallazgo de foco del MVP).
+    expect(dialog.contains(document.activeElement)).toBe(true);
+
+    // Exactamente 2 datos curiosos en la nota de campo (el pool del país tiene más).
+    const aside = within(dialog).getByText('Nota de campo').closest('aside')!;
+    expect(within(aside).getAllByRole('listitem')).toHaveLength(2);
+  });
+
+  it('el scrim NO avanza; solo el CTA cierra la hoja y pasa a la siguiente', async () => {
+    const user = userEvent.setup();
+    const dialog = await openSheet(user);
+
+    // El scrim es el hermano previo de la hoja; tocarlo no cierra ni avanza.
+    // (El progreso queda inert/aria-hidden detrás mientras la hoja está abierta.)
+    const scrim = dialog.previousElementSibling as HTMLElement;
+    await user.click(scrim);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    // El CTA sí avanza: la hoja se cierra y el progreso pasa de 1 a 2.
+    await user.click(screen.getByRole('button', { name: 'Siguiente' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
+  });
+
+  it('Esc equivale al CTA: avanza a la siguiente pregunta', async () => {
+    const user = userEvent.setup();
+    await openSheet(user);
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
   });
 });
 

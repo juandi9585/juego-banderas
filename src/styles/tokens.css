@@ -129,8 +129,34 @@
   --z-base: 0;
   --z-raised: 10;
   --z-sticky: 100;
-  --z-overlay: 1000;
+  --z-overlay: 1000;   /* scrim del bottom sheet */
+  --z-sheet: 1001;     /* hoja "nota de campo" (sobre el scrim) */
   --z-toast: 1100;
+
+  /* ---- Iteración 2 · juego sin scroll + bottom sheet "nota de campo" ----
+     Ver docs/design.md §10. El objetivo es que la pantalla de pregunta quepa
+     completa en 360×640 sin scroll y que el feedback sea una hoja modal que no
+     empuja el contenido. */
+
+  /* Barra superior compacta del juego (progreso + salir). Reemplaza al
+     AppHeader global durante la partida; conserva tap-min. */
+  --game-topbar-h: 44px;
+
+  /* Padding vertical de la pantalla de juego (mucho más compacto que el de
+     `main`, que es --space-5/--space-12). Los lados siguen en --space-4. */
+  --game-pad-block: var(--space-3);   /* 12px arriba y abajo del área de juego */
+
+  /* Cap de alto de la bandera héroe (flag→name y type-name). Es el elemento
+     ELÁSTICO del layout: `flex: 1 1 auto` que encoge con este techo, de modo que
+     el total nunca desborda 640. 30dvh en 360×640 ≈ 192px; techo duro 220px para
+     que al retraerse la barra del navegador (dvh mayor) no genere scroll. */
+  --flag-hero-max-h: clamp(150px, 30dvh, 220px);
+
+  /* Bottom sheet "nota de campo" (feedback tras responder) */
+  --scrim: rgba(18, 41, 63, 0.44);    /* Tinta @44% — atenúa la pregunta detrás */
+  --sheet-max-h: 88dvh;               /* tope; el área de datos scrollea dentro */
+  --sheet-radius: var(--radius-xl);   /* radio de las esquinas SUPERIORES (20px) */
+  --sheet-pad: var(--space-5);        /* padding interior (lados y superior) */
 
   color-scheme: light;
 }
@@ -169,6 +195,9 @@
     --c-flag-bg: #EEF2F5;         /* interior de bandera claro también en dark */
 
     --graticule-line: rgba(231, 238, 244, 0.06);
+
+    /* Scrim más denso en dark (el fondo ya es navy profundo). */
+    --scrim: rgba(2, 8, 14, 0.60);
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.30), 0 1px 3px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35), 0 8px 20px rgba(0, 0, 0, 0.40);

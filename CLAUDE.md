@@ -55,7 +55,10 @@ public/flags/               # SVGs de banderas para offline
 ```
 
 ## Convenciones
+- **Trabajar siempre en la rama `dev`** (main queda para lo desplegado/estable).
 - Mobile-first siempre; probar a **360–414px** de ancho.
+- Minimizar el scroll vertical en el juego: la pregunta completa debe caber en ~360×640
+  y el feedback tras responder es un **pop-up/bottom sheet**, no contenido inline.
 - Accesibilidad: foco visible, `prefers-reduced-motion`, contraste AA.
 - Copys en español, voz activa, sentence case (ver skill `frontend-design`).
 - Al construir o rediseñar UI, **cargar y seguir la skill `frontend-design`**.

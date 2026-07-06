@@ -10,6 +10,11 @@ interface FlagImageProps {
   /** La bandera del juego se precarga; en grids conviene lazy. */
   lazy?: boolean;
   /**
+   * Bandera héroe elástica: la altura la marca el contenedor (p. ej.
+   * `--flag-hero-max-h`) y el ancho sigue por `aspect-ratio`. Ver design §11.
+   */
+  fill?: boolean;
+  /**
    * Texto alternativo. Por defecto "Bandera de {país}"; en el juego debe
    * sobrescribirse para no revelar la respuesta ("" si el contenedor ya tiene
    * etiqueta, o un alt neutro como "Bandera a identificar").
@@ -27,9 +32,15 @@ export function FlagImage({
   size = 'md',
   active = false,
   lazy = false,
+  fill = false,
   alt,
 }: FlagImageProps) {
-  const classes = [styles.card, styles[size], active ? styles.active : '']
+  const classes = [
+    styles.card,
+    styles[size],
+    active ? styles.active : '',
+    fill ? styles.fill : '',
+  ]
     .filter(Boolean)
     .join(' ');
 

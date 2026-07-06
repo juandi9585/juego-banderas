@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useGame } from '../features/game/useGame';
 import { FlagImage } from '../components/FlagImage';
@@ -9,6 +10,12 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export function ResultPage() {
   const { state, result, restart, reset } = useGame();
   const navigate = useNavigate();
+
+  // Al llegar desde el CTA "Ver resultado", el foco aterriza en el titular.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
 
   if (!result) {
     return <Navigate to="/" replace />;
@@ -26,7 +33,7 @@ export function ResultPage() {
     <div className={styles.page}>
       <section>
         <p className={styles.eyebrow}>Ronda completada</p>
-        <h1 className={styles.score}>
+        <h1 ref={headingRef} tabIndex={-1} className={styles.score}>
           {result.correctCount} <span className={styles.scoreOf}>de</span>{' '}
           {result.total}
         </h1>

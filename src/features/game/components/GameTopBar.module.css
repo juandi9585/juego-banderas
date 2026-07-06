@@ -1,0 +1,33 @@
+.topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--game-topbar-h);
+}
+
+.exit {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--game-topbar-h);
+  height: var(--game-topbar-h);
+  /* alinea el icono al borde óptico sin perder el objetivo táctil de 44px */
+  margin-left: calc(var(--space-2) * -1);
+  border-radius: var(--radius-md);
+  color: var(--c-ink-2);
+  font-size: var(--text-lg);
+  transition: color var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard);
+}
+
+.exit:hover {
+  color: var(--c-ink);
+  background: var(--c-surface-2);
+}
+
+.progress {
+  flex: 1;
+  min-width: 0;
+}

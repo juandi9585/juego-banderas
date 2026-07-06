@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type Ref } from 'react';
 import { FlagImage } from '../../../components/FlagImage';
 import { Button } from '../../../components/Button';
 import type { AnswerRecord, QuizQuestion } from '../types';
@@ -8,11 +8,13 @@ interface Props {
   question: QuizQuestion;
   answered: AnswerRecord | null;
   onAnswer: (text: string) => void;
+  /** El padre enfoca este prompt al avanzar de pregunta (tabindex=-1). */
+  promptRef?: Ref<HTMLParagraphElement>;
 }
 
 // El padre monta este componente con key={question.id}, así el input se
 // reinicia solo al cambiar de pregunta.
-export function TypeNameQuestion({ question, answered, onAnswer }: Props) {
+export function TypeNameQuestion({ question, answered, onAnswer, promptRef }: Props) {
   const [value, setValue] = useState('');
 
   const inputStateClass = answered
@@ -23,12 +25,15 @@ export function TypeNameQuestion({ question, answered, onAnswer }: Props) {
 
   return (
     <div className={styles.question}>
-      <p className={styles.prompt}>¿De qué país es esta bandera?</p>
+      <p ref={promptRef} tabIndex={-1} className={styles.prompt}>
+        ¿De qué país es esta bandera?
+      </p>
       <div className={styles.hero}>
         <FlagImage
           country={question.country}
           size="md"
           active={!answered}
+          fill
           alt={answered ? `Bandera de ${question.country.name}` : 'Bandera a identificar'}
         />
       </div>

@@ -1,33 +1,50 @@
+/* Pregunta: columna flex que rellena el área de juego sin scroll (§11). La
+   bandera héroe es el elemento elástico; prompt y opciones quedan fijos. */
 .question {
-  display: grid;
-  gap: var(--space-4);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
   animation: fadeUp var(--dur) var(--ease-out);
 }
 
 .prompt {
-  font-size: var(--text-base);
+  flex: none;
+  font-size: var(--text-sm);
   color: var(--c-ink-2);
+  outline: none; /* foco programático al avanzar, sin halo visual */
 }
 
 .countryName {
+  flex: none;
   font-family: var(--font-display);
-  font-size: var(--text-2xl);
+  font-size: var(--text-xl);
   font-weight: var(--weight-display);
   letter-spacing: var(--tracking-tight);
-  line-height: var(--leading-tight);
+  line-height: var(--leading-snug);
   color: var(--c-ink);
 }
 
+/* Bandera héroe: cede altura hasta su techo elástico (--flag-hero-max-h) y se
+   centra. El ancho lo deriva `aspect-ratio` en la propia FlagImage (fill). */
 .hero {
-  max-width: 20rem;
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: var(--flag-hero-max-h);
+  display: flex;
+  justify-content: center;
 }
 
 .options {
+  flex: none;
   display: grid;
   gap: var(--space-3);
 }
 
 .flagGrid {
+  flex: none;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
@@ -35,6 +52,7 @@
 
 /* ── Modo escribir ──────────────────────────────────────────────────────── */
 .typeForm {
+  flex: none;
   display: grid;
   gap: var(--space-3);
 }

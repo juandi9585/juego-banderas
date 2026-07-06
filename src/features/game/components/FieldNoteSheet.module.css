@@ -1,0 +1,128 @@
+/* Scrim: atenúa la pregunta detrás pero la deja legible (§10.3). No cierra al
+   tocarlo (sin handler): el único camino es el CTA. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  background: var(--scrim);
+  animation: scrimIn var(--dur) var(--ease-out);
+}
+
+@supports (backdrop-filter: blur(1.5px)) {
+  .scrim {
+    backdrop-filter: blur(1.5px) saturate(0.92);
+  }
+}
+
+/* Hoja "nota de campo": papel Nota anclado abajo, ancho de contenido centrado,
+   esquinas superiores redondeadas y hoist de latón a la izquierda (§10.1). */
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-sheet);
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  max-height: var(--sheet-max-h);
+  display: flex;
+  flex-direction: column;
+  background: var(--c-note);
+  border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+  box-shadow: var(--shadow-lg);
+  padding: var(--sheet-pad);
+  padding-left: calc(var(--sheet-pad) + var(--hoist-width));
+  padding-bottom: max(var(--sheet-pad), env(safe-area-inset-bottom));
+  overflow: hidden;
+  animation: sheetIn var(--dur-slow) var(--ease-out);
+}
+
+/* Marca de hoist (signature) — SIEMPRE latón, acierto y error (§10.1). */
+.sheet::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--hoist-width);
+  background: var(--c-accent);
+  border-top-left-radius: var(--sheet-radius);
+}
+
+/* §A — Barra de estado: único sitio con color semántico (§10.2). */
+.status {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-base);
+  outline: none; /* foco programático, no visual */
+}
+
+.statusOk {
+  color: var(--c-success-ink);
+}
+
+.statusError {
+  color: var(--c-error-ink);
+}
+
+.statusIcon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+}
+
+.statusOk .statusIcon {
+  background: var(--c-success-tint);
+  color: var(--c-success);
+}
+
+.statusError .statusIcon {
+  background: var(--c-error-tint);
+  color: var(--c-error);
+}
+
+.statusText {
+  min-width: 0;
+}
+
+/* §D — CTA fijo, separado de los facts (§10.2). */
+.cta {
+  flex: none;
+  margin-top: var(--space-4);
+}
+
+@keyframes scrimIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sheetIn {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Reduced motion: sin translate ni fade animado (§10.5). */
+@media (prefers-reduced-motion: reduce) {
+  .scrim,
+  .sheet {
+    animation: none;
+  }
+}

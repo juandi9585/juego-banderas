@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Valida el dataset de países. Node puro, sin dependencias.
 // Comprueba: sin códigos duplicados, campos obligatorios presentes,
-// >=2 hechos por país, y que cada bandera referenciada exista en public/flags/.
+// >=5 hechos por país, y que cada bandera referenciada exista en public/flags/.
 //
 // Uso: node scripts/validate-data.mjs
 
@@ -70,9 +70,10 @@ for (let i = 0; i < countries.length; i++) {
     else seen.set(c.code, i);
   }
 
-  // Hechos: al menos 2
+  // Hechos: al menos 5 (objetivo 6; se aceptan hasta ~8)
   if (Array.isArray(c.facts)) {
-    if (c.facts.length < 2) errors.push(`[${id}] tiene ${c.facts.length} hecho(s); se requieren >= 2`);
+    if (c.facts.length < 5) errors.push(`[${id}] tiene ${c.facts.length} hecho(s); se requieren >= 5`);
+    else if (c.facts.length > 8) warnings.push(`[${id}] tiene ${c.facts.length} hechos; el tope recomendado es 8`);
     c.facts.forEach((f, j) => {
       if (typeof f !== "string" || f.trim() === "") errors.push(`[${id}] hecho[${j}] vacío o no es texto`);
       else if (f.length > 140) warnings.push(`[${id}] hecho[${j}] supera 140 caracteres (${f.length})`);

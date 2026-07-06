@@ -42,3 +42,12 @@
   box-shadow: var(--shadow-md);
   padding: var(--space-3);
 }
+
+/* Héroe elástico: la altura la fija el contenedor flex (--flag-hero-max-h) y el
+   ancho lo deriva `aspect-ratio`. Centrada. Ver docs/design.md §11. */
+.fill {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+}

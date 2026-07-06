@@ -37,18 +37,20 @@ describe('App (smoke)', () => {
     const main = screen.getByRole('main');
     const options = within(main)
       .getAllByRole('button')
-      .filter((b) => !b.textContent?.includes('Siguiente'));
+      .filter((b) => b.getAttribute('aria-label') !== 'Salir del juego');
     expect(options).toHaveLength(4);
 
-    // Responder la primera opción: aparece feedback + nota de campo + siguiente.
+    // Responder la primera opción: sube la hoja modal con la nota de campo.
     await user.click(options[0]);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('Nota de campo')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Siguiente' }),
     ).toBeInTheDocument();
 
-    // Avanzar: el progreso pasa a 2.
+    // Avanzar con el CTA: la hoja se cierra y el progreso pasa a 2.
     await user.click(screen.getByRole('button', { name: 'Siguiente' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
   });
 

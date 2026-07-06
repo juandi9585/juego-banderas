@@ -3,3 +3,12 @@
   margin-inline: auto;
   padding: var(--space-5) var(--space-4) var(--space-12);
 }
+
+/* Partida a pantalla completa sin scroll (§11.1). svh gana donde se soporta: el
+   contenido siempre cabe con la barra del navegador desplegada; vh es fallback.
+   La columna del juego (GamePage) rellena este contenedor. */
+.mainGame {
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+}
