@@ -1,0 +1,36 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.track {
+  position: relative;
+  flex: 1;
+  height: 8px;
+  background-color: var(--c-border);
+  /* Ticks de regla graduada: una marca por segmento. */
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(var(--segment, 10%) - 1px),
+    var(--c-border-strong) calc(var(--segment, 10%) - 1px),
+    var(--c-border-strong) var(--segment, 10%)
+  );
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--c-accent);
+  border-radius: var(--radius-pill);
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+.counter {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--c-ink-2);
+  white-space: nowrap;
+}

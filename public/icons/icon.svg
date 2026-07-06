@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Banderas del Mundo">
+  <!-- Fondo: Tinta (navy de carta náutica), esquinas redondeadas suaves -->
+  <rect width="512" height="512" rx="112" fill="#12293F"/>
+
+  <!-- Retícula de coordenadas (atmósfera cartográfica), muy tenue -->
+  <g stroke="#22415C" stroke-width="2" opacity="0.55">
+    <line x1="0" y1="128" x2="512" y2="128"/>
+    <line x1="0" y1="256" x2="512" y2="256"/>
+    <line x1="0" y1="384" x2="512" y2="384"/>
+    <line x1="128" y1="0" x2="128" y2="512"/>
+    <line x1="256" y1="0" x2="256" y2="512"/>
+    <line x1="384" y1="0" x2="384" y2="512"/>
+  </g>
+
+  <!-- Marca: bandera montada en su asta (destila el signature del hoist) -->
+  <!-- Base plantada sobre el mapa -->
+  <ellipse cx="178" cy="402" rx="34" ry="11" fill="#8A560F"/>
+  <!-- Asta (Latón) -->
+  <rect x="168" y="108" width="18" height="296" rx="9" fill="#C07F30"/>
+  <!-- Remate del asta -->
+  <circle cx="177" cy="104" r="15" fill="#C07F30"/>
+
+  <!-- Banda de hoist (el elemento signature), en Latón -->
+  <rect x="186" y="136" width="26" height="112" fill="#B8742A"/>
+  <!-- Campo de la bandera (Papel), con ondeo suave -->
+  <path d="M212 136 C268 127 322 149 378 134 L378 246 C322 259 268 239 212 250 Z" fill="#F2F5F7"/>
+  <!-- Sombra interior sutil del ondeo, para dar cuerpo -->
+  <path d="M212 250 C268 239 322 259 378 246 L378 236 C322 249 268 229 212 240 Z" fill="#12293F" opacity="0.06"/>
+</svg>

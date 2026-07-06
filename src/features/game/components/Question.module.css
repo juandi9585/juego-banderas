@@ -1,0 +1,96 @@
+.question {
+  display: grid;
+  gap: var(--space-4);
+  animation: fadeUp var(--dur) var(--ease-out);
+}
+
+.prompt {
+  font-size: var(--text-base);
+  color: var(--c-ink-2);
+}
+
+.countryName {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  color: var(--c-ink);
+}
+
+.hero {
+  max-width: 20rem;
+}
+
+.options {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.flagGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+/* ── Modo escribir ──────────────────────────────────────────────────────── */
+.typeForm {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.input {
+  width: 100%;
+  height: 56px;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-lg);
+  background: var(--c-surface);
+  border: var(--border-thin) solid var(--c-border);
+  border-radius: var(--radius-md);
+  color: var(--c-ink);
+  transition: border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.input::placeholder {
+  color: var(--c-ink-3);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--c-accent);
+  box-shadow: var(--shadow-focus);
+}
+
+.inputCorrect:disabled {
+  border: 2px solid var(--c-success);
+  color: var(--c-success-ink);
+}
+
+.inputIncorrect:disabled {
+  border: 2px solid var(--c-error);
+  color: var(--c-error-ink);
+}
+
+.help {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--c-ink-3);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .question {
+    animation: none;
+  }
+}

@@ -1,0 +1,113 @@
+.option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-3) var(--space-4);
+  background: var(--c-surface);
+  border: var(--border-thin) solid var(--c-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--text-lg);
+  text-align: left;
+  color: var(--c-ink);
+  transition: border-color var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.option:hover:not(:disabled) {
+  border-color: var(--c-border-strong);
+  transform: translateY(-1px);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.icon {
+  font-weight: var(--weight-bold);
+  font-size: var(--text-base);
+}
+
+/* Contenido de bandera (name-to-flag): sin padding extra, la mini tarjeta manda. */
+.flagOption {
+  padding: var(--space-2);
+}
+
+/* ── Estados tras responder ─────────────────────────────────────────────── */
+.correct {
+  background: var(--c-success-tint);
+  border: 2px solid var(--c-success);
+  color: var(--c-success-ink);
+  animation: settle var(--dur) var(--ease-spring);
+}
+
+.correct .icon {
+  color: var(--c-success-ink);
+}
+
+.incorrect {
+  background: var(--c-error-tint);
+  border: 2px solid var(--c-error);
+  color: var(--c-error-ink);
+  animation: shake var(--dur) var(--ease-standard);
+}
+
+.incorrect .icon {
+  color: var(--c-error-ink);
+}
+
+.dimmed {
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+/* disabled genérico (grid congelada tras responder): sin hover ni sombra extra */
+.option:disabled {
+  cursor: default;
+}
+
+@keyframes settle {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .option,
+  .correct,
+  .incorrect {
+    animation: none;
+  }
+  .option:hover:not(:disabled) {
+    transform: none;
+  }
+}
