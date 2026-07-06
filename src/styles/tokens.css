@@ -227,7 +227,10 @@ html {
 }
 
 body {
+  /* svh, no vh: en móvil 100vh mide el viewport con la barra del navegador
+     oculta, y ese extra dejaba ~50px de scroll fantasma en /jugar (100svh). */
   min-height: 100vh;
+  min-height: 100svh;
   font-family: var(--font-body);
   font-size: var(--text-base);
   line-height: var(--leading-normal);
