@@ -1,7 +1,14 @@
 /* Pantalla de juego: columna flex a alto de viewport que no scrollea (§11.1).
-   Rellena el <main> de la ruta /jugar (100svh, overflow hidden). */
+   Rellena el <main> de la ruta /jugar (100svh, overflow hidden). Aunque el
+   <main> del juego es a pantalla completa, la columna conserva el tope de ancho
+   de la app: sin él, en escritorio la cuadrícula 2×2 de nombre→bandera deriva
+   alturas enormes del ancho de celda (aspect-ratio) y expulsa la pregunta del
+   viewport sin scroll. En móvil (< 30rem) no cambia nada. */
 .page {
   height: 100%;
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
