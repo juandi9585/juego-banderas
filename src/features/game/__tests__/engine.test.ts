@@ -7,7 +7,8 @@ import {
   checkTypedAnswer,
 } from '../engine';
 import { OPTIONS_PER_QUESTION } from '../constants';
-import type { QuizConfig } from '../types';
+import type { QuizConfig, QuizQuestion } from '../types';
+import { mulberry32 } from '../../../lib/random';
 import { mockCountries, byCode, seededRng } from './mockCountries';
 
 const codesOf = (arr: { code: string }[]) => arr.map((c) => c.code);
@@ -148,6 +149,61 @@ describe('buildQuiz', () => {
     const ids = quiz.map((q) => q.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(quiz[0].id).toBe(`0-${quiz[0].correctCode}`);
+  });
+});
+
+describe('buildQuiz — modo mixto (competitivo)', () => {
+  const mixtoConfig: QuizConfig = {
+    mode: 'mixto',
+    categories: [],
+    questionCount: 10,
+  };
+
+  const fingerprint = (quiz: QuizQuestion[]) =>
+    quiz.map((q) => `${q.id}:${q.mode}:${q.options!.map((o) => o.code).join(',')}`);
+
+  it('reparte ⌈n/2⌉ flag-to-name + ⌊n/2⌋ name-to-flag (par), ambos presentes', () => {
+    const quiz = buildQuiz(mockCountries, mixtoConfig, mulberry32(1));
+    expect(quiz).toHaveLength(10);
+    expect(quiz.filter((q) => q.mode === 'flag-to-name')).toHaveLength(5);
+    expect(quiz.filter((q) => q.mode === 'name-to-flag')).toHaveLength(5);
+    // Nunca type-name en el mixto (§3.1).
+    expect(quiz.some((q) => q.mode === 'type-name')).toBe(false);
+  });
+
+  it('reparto impar n=7 → 4 flag-to-name + 3 name-to-flag', () => {
+    const quiz = buildQuiz(
+      mockCountries,
+      { ...mixtoConfig, questionCount: 7 },
+      mulberry32(5),
+    );
+    expect(quiz).toHaveLength(7);
+    expect(quiz.filter((q) => q.mode === 'flag-to-name')).toHaveLength(4);
+    expect(quiz.filter((q) => q.mode === 'name-to-flag')).toHaveLength(3);
+  });
+
+  it('todas las preguntas son de opción múltiple (kind + 4 opciones)', () => {
+    const quiz = buildQuiz(mockCountries, mixtoConfig, mulberry32(3));
+    expect(quiz.every((q) => q.kind === 'multiple-choice')).toBe(true);
+    expect(
+      quiz.every((q) => q.options?.length === OPTIONS_PER_QUESTION),
+    ).toBe(true);
+  });
+
+  it('misma semilla → ronda IDÉNTICA (ids, modos y orden de opciones)', () => {
+    const a = buildQuiz(mockCountries, mixtoConfig, mulberry32(42));
+    const b = buildQuiz(mockCountries, mixtoConfig, mulberry32(42));
+    expect(fingerprint(a)).toEqual(fingerprint(b));
+  });
+
+  it('min(20, pool): un pool de 13 con questionCount 20 → 13 preguntas', () => {
+    const pool13 = mockCountries.slice(0, 13);
+    const quiz = buildQuiz(
+      pool13,
+      { mode: 'mixto', categories: [], questionCount: 20 },
+      mulberry32(2),
+    );
+    expect(quiz).toHaveLength(13);
   });
 });
 

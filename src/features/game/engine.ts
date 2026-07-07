@@ -95,8 +95,24 @@ export function buildQuiz(
   const count = Math.min(config.questionCount, filtered.length);
   const answers = sample(filtered, count, rng);
 
+  // Modo POR PREGUNTA. En 'mixto' (competitivo) se alternan los 2 de opción
+  // múltiple —⌈n/2⌉ 'flag-to-name' + ⌊n/2⌋ 'name-to-flag'— barajados con el
+  // mismo rng inyectado, de modo que la ronda es reproducible desde la semilla.
+  // En cualquier otro modo, todas las preguntas comparten el modo de la config
+  // (rama SIN consumir rng aquí: preserva la secuencia del comportamiento actual).
+  const modes: GameMode[] =
+    config.mode === 'mixto'
+      ? shuffle(
+          [
+            ...Array<GameMode>(Math.ceil(count / 2)).fill('flag-to-name'),
+            ...Array<GameMode>(Math.floor(count / 2)).fill('name-to-flag'),
+          ],
+          rng,
+        )
+      : Array<GameMode>(count).fill(config.mode);
+
   return answers.map((answer, index) => {
-    const q = buildQuestion(config.mode, answer, filtered, rng);
+    const q = buildQuestion(modes[index], answer, filtered, rng);
     return { ...q, id: `${index}-${answer.code}` };
   });
 }

@@ -158,6 +158,12 @@
   --sheet-radius: var(--radius-xl);   /* radio de las esquinas SUPERIORES (20px) */
   --sheet-pad: var(--space-5);        /* padding interior (lados y superior) */
 
+  /* ---- Iteración 3 · modo competitivo (docs/design.md §13–§18) ----------
+     Único token de diseño nuevo: el grosor de la "mecha" del countdown, que se
+     dibuja a ras del borde inferior del GameTopBar (cero altura añadida). El
+     resto reutiliza tokens existentes. Coherente con --hoist-width (4px). */
+  --countdown-track-h: 3px;
+
   color-scheme: light;
 }
 

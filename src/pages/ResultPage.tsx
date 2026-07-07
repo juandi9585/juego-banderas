@@ -1,15 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useGame } from '../features/game/useGame';
 import { computeScore } from '../features/game/score';
+import { useRecords } from '../features/records/useRecords';
+import type { RecordEntry } from '../features/records/records';
 import { FlagImage } from '../components/FlagImage';
 import { Button } from '../components/Button';
 import styles from './ResultPage.module.css';
 
 const pad = (n: number) => String(n).padStart(2, '0');
+const fmt = (n: number) => n.toLocaleString('es-ES');
 
 export function ResultPage() {
   const { state, result, restart, reset } = useGame();
+  const records = useRecords();
   const navigate = useNavigate();
 
   // Al llegar desde el CTA "Ver resultado", el foco aterriza en el titular.
@@ -18,16 +22,54 @@ export function ResultPage() {
     headingRef.current?.focus();
   }, []);
 
-  if (!result) {
+  // Puntaje (§4). Función pura: informativa en casual, base del récord en
+  // competitivo. Memo por `result` para que el efecto de récord tenga una
+  // dependencia estable. `null` mientras no hay resultado (guarda de abajo).
+  const score = useMemo(() => (result ? computeScore(result) : null), [result]);
+
+  const isCompetitive = result?.config.competitive != null;
+
+  // Resultado del récord: se registra UNA sola vez al aterrizar (guarda de ref
+  // contra el doble efecto de StrictMode). `prev` = mejor marca ANTES de esta
+  // partida (para el copy "Superaste tu récord de …").
+  const submittedRef = useRef(false);
+  const [recordResult, setRecordResult] = useState<{
+    isNew: boolean;
+    prev: RecordEntry | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!result || !isCompetitive || !score || submittedRef.current) return;
+    const categoryId = result.config.categories[0]; // invariante: exactamente una
+    // La UI competitiva SIEMPRE pasa una categoría; pero si por un bug llegara
+    // `categories: []`, no registramos el récord bajo la clave 'undefined:mixto'.
+    // Sin categoría no hay récord: se sale sin marcar `submittedRef`.
+    if (categoryId == null) return;
+    submittedRef.current = true;
+    const mode = result.config.mode;
+    const prev = records.getBest(categoryId, mode);
+    const entry: RecordEntry = {
+      points: score.points,
+      correct: score.correct,
+      total: score.total,
+      maxStreak: score.maxStreak,
+      // Desempate por tiempo RESPONDIENDO (suma de elapsedMs), no por reloj de
+      // pared: leer la ficha de datos con calma no penaliza el récord (§5).
+      durationMs: score.answeredMs,
+      achievedAt: Date.now(),
+    };
+    const isNew = records.submit(categoryId, mode, entry);
+    setRecordResult({ isNew, prev });
+  }, [result, isCompetitive, score, records]);
+
+  if (!result || !score) {
     return <Navigate to="/" replace />;
   }
 
   const accuracy =
     result.total === 0 ? 0 : Math.round((result.correctCount / result.total) * 100);
 
-  // Puntaje informativo en el casual (§4). Misma función pura que usará el
-  // competitivo; aquí no alimenta ranking ni récords.
-  const score = computeScore(result);
+  const isRecord = isCompetitive && recordResult?.isNew === true;
 
   // Preguntas falladas (para repasar): país correcto de cada fallo.
   const failed = state.questions.filter(
@@ -47,17 +89,36 @@ export function ResultPage() {
         </p>
       </section>
 
-      {/* Puntaje informativo (§4). El récord/ranking por categoría llegará con el
-          modo competitivo (RecordsProvider + submit(), doc §5). */}
-      <section className={styles.scorePanel} aria-label="Puntaje de la ronda">
-        <p className={styles.scoreTag}>Puntaje</p>
-        <p className={styles.scorePoints}>
-          {score.points.toLocaleString('es-ES')}
-        </p>
+      {/* Puntaje informativo (§4) + banner de récord en competitivo (§15). El
+          casual queda idéntico: panel neutro, sin récords. */}
+      <section
+        className={`${styles.scorePanel} ${isRecord ? styles.isRecord : ''}`}
+        aria-label={
+          isRecord ? 'Puntaje de la ronda. Nuevo récord.' : 'Puntaje de la ronda'
+        }
+      >
+        {isRecord ? (
+          <p className={styles.recordFlag}>¡Nuevo récord!</p>
+        ) : (
+          <p className={styles.scoreTag}>Puntaje</p>
+        )}
+        <p className={styles.scorePoints}>{fmt(score.points)}</p>
         {score.maxStreak >= 2 && (
           <p className={styles.streak}>
             Mejor racha: {score.maxStreak} seguidas
           </p>
+        )}
+        {/* Nuevo récord: qué batiste (o "Tu primer récord"). */}
+        {isRecord && (
+          <p className={styles.recordPrev}>
+            {recordResult?.prev
+              ? `Superaste tu récord de ${fmt(recordResult.prev.points)} pts`
+              : 'Tu primer récord'}
+          </p>
+        )}
+        {/* No lo superaste: la marca a batir, sin latón de logro. */}
+        {isCompetitive && recordResult && !recordResult.isNew && recordResult.prev && (
+          <p className={styles.recordToBeat}>Récord {fmt(recordResult.prev.points)} pts</p>
         )}
       </section>
 

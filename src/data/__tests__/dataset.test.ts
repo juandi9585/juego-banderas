@@ -3,6 +3,11 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { countries, findCountry, TOTAL_COUNTRIES } from '../dataset';
 import { buildQuiz } from '../../features/game/engine';
+import {
+  GAME_CATEGORIES,
+  filterByCategories,
+  type CategoryId,
+} from '../../features/game/categories';
 import { matchesCountryName } from '../../lib/text';
 import type { Continent, QuizConfig } from '../../features/game/types';
 
@@ -51,6 +56,65 @@ describe('Integridad del dataset', () => {
 
   it('Cuba está en el continente renombrado "América del Norte y Centro"', () => {
     expect(findCountry('cu')?.continent).toBe('América del Norte y Centro');
+  });
+});
+
+describe('Catálogo de categorías ↔ dataset (conteos exactos, §2.3)', () => {
+  // Ancla catálogo ↔ datos: si el dataset cambia y descuadra un sector, este
+  // test lo detecta. Conteos verificados sobre src/data/countries.json.
+  const EXPECTED: Record<CategoryId, number> = {
+    mundo: 194,
+    africa: 54,
+    asia: 46,
+    europa: 45,
+    america: 35,
+    'america-norte-centro': 23,
+    'america-sur': 12,
+    oceania: 14,
+    'europa-oeste': 27,
+    'europa-este': 18,
+    'asia-occidental': 16,
+    'sudeste-asiatico': 11,
+    'asia-meridional': 9,
+    'asia-oriental-central': 10,
+    'africa-norte-occidental': 22,
+    'africa-oriental': 17,
+    'africa-central-austral': 15,
+    caribe: 13,
+  };
+
+  it('el catálogo tiene exactamente 18 categorías', () => {
+    expect(GAME_CATEGORIES).toHaveLength(18);
+  });
+
+  it('cada categoría filtra el nº de países esperado', () => {
+    for (const cat of GAME_CATEGORIES) {
+      expect(filterByCategories([cat.id], countries)).toHaveLength(EXPECTED[cat.id]);
+    }
+  });
+
+  it('todas las categorías cumplen la regla de ≥ 8 países (4 opciones distintas)', () => {
+    for (const cat of GAME_CATEGORIES) {
+      expect(filterByCategories([cat.id], countries).length).toBeGreaterThanOrEqual(8);
+    }
+  });
+
+  it('sumas por continente: Europa 27+18, Asia 16+11+9+10, África 22+17+15, América 23+12', () => {
+    expect(EXPECTED['europa-oeste'] + EXPECTED['europa-este']).toBe(EXPECTED.europa);
+    expect(
+      EXPECTED['asia-occidental'] +
+        EXPECTED['sudeste-asiatico'] +
+        EXPECTED['asia-meridional'] +
+        EXPECTED['asia-oriental-central'],
+    ).toBe(EXPECTED.asia);
+    expect(
+      EXPECTED['africa-norte-occidental'] +
+        EXPECTED['africa-oriental'] +
+        EXPECTED['africa-central-austral'],
+    ).toBe(EXPECTED.africa);
+    expect(EXPECTED['america-norte-centro'] + EXPECTED['america-sur']).toBe(
+      EXPECTED.america,
+    );
   });
 });
 

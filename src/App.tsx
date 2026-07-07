@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { GameProvider } from './features/game/GameProvider';
+import { RecordsProvider } from './features/records/RecordsProvider';
 import { countries } from './data/dataset';
 import { AppHeader } from './components/AppHeader';
 import { HomePage } from './pages/HomePage';
 import { GamePage } from './pages/GamePage';
 import { ResultPage } from './pages/ResultPage';
+import { CompetitivePage } from './pages/CompetitivePage';
 import { ExplorePage } from './pages/ExplorePage';
 import { CountryDetailPage } from './pages/CountryDetailPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -23,6 +25,7 @@ function AppContent() {
           <Route path="/" element={<HomePage />} />
           <Route path="/jugar" element={<GamePage />} />
           <Route path="/resultado" element={<ResultPage />} />
+          <Route path="/competitivo" element={<CompetitivePage />} />
           <Route path="/explorar" element={<ExplorePage />} />
           <Route path="/explorar/:code" element={<CountryDetailPage />} />
           <Route path="*" element={<NotFoundPage />} />
@@ -35,9 +38,13 @@ function AppContent() {
 export default function App() {
   return (
     <BrowserRouter>
-      <GameProvider countries={countries}>
-        <AppContent />
-      </GameProvider>
+      {/* RecordsProvider envuelve por fuera: es independiente del motor de juego
+          (docs/competitivo.md §5); la ResultPage le entrega el puntaje ya hecho. */}
+      <RecordsProvider>
+        <GameProvider countries={countries}>
+          <AppContent />
+        </GameProvider>
+      </RecordsProvider>
     </BrowserRouter>
   );
 }

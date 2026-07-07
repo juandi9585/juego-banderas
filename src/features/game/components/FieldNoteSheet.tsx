@@ -25,6 +25,10 @@ const FACTS_PER_ANSWER = 2;
 export function FieldNoteSheet({ question, answer, isLast, onNext }: Props) {
   const { country } = question;
   const correct = answer.correct;
+  // Tercera variante de la barra de estado (§17): el fallo llegó por tiempo
+  // agotado, no por un toque erróneo. Mismo tono rojo (sigue siendo 0 pts); solo
+  // cambian el glifo (reloj ◷) y el copy respecto al fallo por toque.
+  const timedOut = answer.timedOut === true;
 
   // 2 datos al azar del pool del país, estables durante la vida de esta
   // respuesta: el sheet se monta una vez por respuesta (key={question.id} en el
@@ -87,21 +91,33 @@ export function FieldNoteSheet({ question, answer, isLast, onNext }: Props) {
         className={styles.sheet}
         role="dialog"
         aria-modal="true"
-        aria-label={correct ? 'Respuesta correcta' : 'Respuesta incorrecta'}
+        aria-label={
+          timedOut
+            ? 'Se acabó el tiempo'
+            : correct
+              ? 'Respuesta correcta'
+              : 'Respuesta incorrecta'
+        }
       >
         {/* §A — Barra de estado (aria-live: se anuncia al abrir). */}
         <p
           ref={statusRef}
           tabIndex={-1}
           aria-live="polite"
-          className={`${styles.status} ${correct ? styles.statusOk : styles.statusError}`}
+          className={`${styles.status} ${
+            correct ? styles.statusOk : styles.statusError
+          }`}
         >
           <span className={styles.statusIcon} aria-hidden="true">
-            {correct ? '✓' : '✕'}
+            {correct ? '✓' : timedOut ? '◷' : '✕'}
           </span>
           <span className={styles.statusText}>
             {correct ? (
               '¡Correcto!'
+            ) : timedOut ? (
+              <>
+                Se acabó el tiempo — era <strong>{country.name}</strong>
+              </>
             ) : (
               <>
                 Era <strong>{country.name}</strong>

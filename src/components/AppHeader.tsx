@@ -17,6 +17,14 @@ export function AppHeader() {
             Jugar
           </NavLink>
           <NavLink
+            to="/competitivo"
+            className={({ isActive }) =>
+              isActive ? `${styles.link} ${styles.active}` : styles.link
+            }
+          >
+            Competir
+          </NavLink>
+          <NavLink
             to="/explorar"
             className={({ isActive }) =>
               isActive ? `${styles.link} ${styles.active}` : styles.link

@@ -1,0 +1,18 @@
+/* Agrupación del selector de categorías del casual (§16). Los chips y su a11y
+   se reutilizan tal cual de ContinentPicker.module.css (cero CSS de chip nuevo);
+   aquí solo el layout de grupos y el subtítulo `.groupHead`, idéntico al de
+   CompetitivePage → un solo lenguaje de agrupación en toda la app. */
+.categoryGroups {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.groupHead {
+  margin: var(--space-3) 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--c-ink-3);
+}

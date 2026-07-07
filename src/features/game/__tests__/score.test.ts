@@ -3,6 +3,7 @@ import {
   computeScore,
   speedBonus,
   SCORE_SPEED_BONUS_MAX,
+  SCORE_GRACE_MS,
 } from '../score';
 import type { AnswerRecord, GameResult, QuizConfig } from '../types';
 
@@ -142,8 +143,10 @@ describe('computeScore — redondeo por pregunta (§4.1)', () => {
   });
 });
 
-describe('computeScore — cotas de partida de 25 (§4.2)', () => {
-  it('partida perfecta (25 aciertos, todos ≤ 2 s) = 5 400', () => {
+describe('computeScore — cotas de la fórmula (§4.2)', () => {
+  // Estas corridas usan 25 aciertos como SONDA de la fórmula (racha ya en su
+  // tope), no como tamaño real de partida: la competitiva juega min(20, pool).
+  it('25 aciertos rápidos (todos ≤ 2 s, bonus pleno) = 5 400', () => {
     const s = computeScore(
       makeResult(Array.from({ length: 25 }, () => ans(true, 1000))),
     );
@@ -161,6 +164,20 @@ describe('computeScore — cotas de partida de 25 (§4.2)', () => {
     expect(s.points).toBe(3600);
     expect(s.maxStreak).toBe(25);
   });
+
+  it('partida competitiva perfecta (20 aciertos rápidos) = 4 275', () => {
+    // 20 = MAX_QUESTIONS del competitivo. elapsed dentro de la ventana de gracia
+    // (< SCORE_GRACE_MS) ⇒ bonus de velocidad pleno en las 20. Puntaje: rampa de
+    // racha Q1–Q5 = 900 y Q6–Q20 al tope ×1.5 (15 × 225 = 3 375) ⇒ 4 275.
+    const fastMs = SCORE_GRACE_MS - 500; // 1 500 ms: claramente "rápido"
+    const s = computeScore(
+      makeResult(Array.from({ length: 20 }, () => ans(true, fastMs))),
+    );
+    expect(s.points).toBe(4275);
+    expect(s.correct).toBe(20);
+    expect(s.total).toBe(20);
+    expect(s.maxStreak).toBe(20);
+  });
 });
 
 describe('computeScore — bordes y datos derivados', () => {
@@ -176,6 +193,22 @@ describe('computeScore — bordes y datos derivados', () => {
   it('copia durationMs del result cuando existe, e indefinido si no', () => {
     expect(computeScore(makeResult([ans(true, 1000)], 45000)).durationMs).toBe(45000);
     expect(computeScore(makeResult([ans(true, 1000)])).durationMs).toBeUndefined();
+  });
+
+  it('answeredMs suma el tiempo de aciertos, fallos y timeouts por igual', () => {
+    // 1 000 (acierto) + 4 000 (fallo) + 10 000 (timeout) = 15 000. Los huecos y
+    // las respuestas sin medición no aportan. Es el desempate de récords (§5):
+    // solo tiempo respondiendo, sin el tiempo de lectura de la ficha.
+    const timeout: AnswerRecord = { ...ans(false, 10000), timedOut: true };
+    const s = computeScore(
+      makeResult([ans(true, 1000), ans(false, 4000), timeout, undefined, ans(true)]),
+    );
+    expect(s.answeredMs).toBe(15000);
+  });
+
+  it('answeredMs es 0 sin respuestas y no se contamina con elapsedMs no finito', () => {
+    expect(computeScore(makeResult([])).answeredMs).toBe(0);
+    expect(computeScore(makeResult([ans(true, Number.NaN)])).answeredMs).toBe(0);
   });
 
   it('accuracy = correct / total con aciertos parciales', () => {

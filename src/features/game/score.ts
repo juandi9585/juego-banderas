@@ -12,6 +12,10 @@ export const SCORE_GRACE_MS = 2_000; // ventana de gracia: bonus pleno
 export const SCORE_TIME_LIMIT_MS = 10_000; // desde aquí el bonus de velocidad es 0
 export const SCORE_STREAK_STEP = 0.1; // +0.1 al multiplicador por acierto seguido
 export const SCORE_STREAK_MAX_MULT = 1.5; // tope del multiplicador de racha
+// Umbral de URGENCIA del countdown competitivo (§13.5): a ≤ 3 s la mecha pasa a
+// rojo y aparece la lectura numérica. Es lógica de UI, no de puntuación, pero
+// vive aquí junto al límite de tiempo para tener una sola fuente de constantes.
+export const SCORE_TIME_WARN_MS = 3_000;
 
 export interface Score {
   points: number; // suma de §4.1 (entero)
@@ -20,6 +24,7 @@ export interface Score {
   accuracy: number; // correct / total (0 si total === 0, nunca NaN)
   maxStreak: number; // mejor racha de aciertos consecutivos de la partida
   durationMs?: number; // finishedAt − startedAt (si está disponible)
+  answeredMs: number; // suma de elapsedMs: solo tiempo RESPONDIENDO (desempate de récords, §5)
 }
 
 /**
@@ -63,11 +68,17 @@ export function computeScore(result: GameResult): Score {
   let correct = 0;
   let streak = 0; // aciertos consecutivos, contando el actual
   let maxStreak = 0;
+  let answeredMs = 0;
 
   // Recorremos por índice hasta `total` para que los huecos (answers[i] ausente)
   // cuenten como fallo, no se salten (a diferencia de forEach/for..of sobre holes).
   for (let i = 0; i < total; i++) {
     const answer = result.answers[i];
+    // Tiempo respondiendo: aciertos, fallos y timeouts por igual. A diferencia de
+    // durationMs (reloj de pared), NO incluye el tiempo leyendo la ficha entre
+    // preguntas — leer con calma no puede costar el récord (decidido 2026-07-07).
+    const elapsed = answer?.elapsedMs;
+    if (elapsed != null && Number.isFinite(elapsed)) answeredMs += elapsed;
     if (answer && answer.correct) {
       streak += 1;
       correct += 1;
@@ -89,5 +100,6 @@ export function computeScore(result: GameResult): Score {
     accuracy: total === 0 ? 0 : correct / total,
     maxStreak,
     durationMs: result.durationMs,
+    answeredMs,
   };
 }

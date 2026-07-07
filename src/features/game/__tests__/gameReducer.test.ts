@@ -100,9 +100,46 @@ describe('gameReducer — captura de tiempo (elapsedMs)', () => {
     state = gameReducer(state, { type: 'NEXT', now: 10000 });
     expect(state.questionStartedAt).toBe(10000);
 
-    state = gameReducer(state, { type: 'RESTART', questions, startedAt: 50000 });
+    state = gameReducer(state, { type: 'RESTART', config, questions, startedAt: 50000 });
     expect(state.questionStartedAt).toBe(50000);
     expect(state.currentIndex).toBe(0);
     expect(state.answers).toEqual([]);
+  });
+});
+
+describe('gameReducer — TIMEOUT (competitivo)', () => {
+  const start = () =>
+    gameReducer(initialState, { type: 'START', config, questions, startedAt: 1000 });
+
+  it('escribe un fallo con timedOut, correct:false y elapsedMs', () => {
+    let state = start();
+    state = gameReducer(state, { type: 'TIMEOUT', at: 11000 }); // 10 s después
+    const rec = state.answers[0];
+    expect(rec.timedOut).toBe(true);
+    expect(rec.correct).toBe(false);
+    expect(rec.correctCode).toBe('fr');
+    expect(rec.elapsedMs).toBe(10000); // 11000 − 1000
+    expect(state.currentIndex).toBe(0); // NO avanza (la hoja se abre)
+    expect(state.status).toBe('playing');
+  });
+
+  it('TIMEOUT tras ANSWER es no-op (gana el clic; misma guarda idempotente)', () => {
+    let state = start();
+    state = gameReducer(state, { type: 'ANSWER', value: 'fr', at: 3000 });
+    const answered = state;
+    const again = gameReducer(state, { type: 'TIMEOUT', at: 11000 });
+    expect(again).toBe(answered); // misma referencia: se ignoró
+    expect(again.answers[0].correct).toBe(true); // el acierto por clic se conserva
+    expect(again.answers[0].timedOut).toBeUndefined();
+  });
+
+  it('ANSWER tras TIMEOUT es no-op (gana el timer; resuelve la carrera)', () => {
+    let state = start();
+    state = gameReducer(state, { type: 'TIMEOUT', at: 11000 });
+    const timedOut = state;
+    const again = gameReducer(state, { type: 'ANSWER', value: 'fr', at: 11500 });
+    expect(again).toBe(timedOut); // misma referencia: se ignoró
+    expect(again.answers[0].timedOut).toBe(true); // el timeout se conserva
+    expect(again.answers[0].correct).toBe(false);
   });
 });

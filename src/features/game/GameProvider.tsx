@@ -2,7 +2,18 @@ import { useCallback, useMemo, useReducer, type ReactNode } from 'react';
 import { gameReducer, initialState } from './gameReducer';
 import { buildQuiz } from './engine';
 import { GameContext } from './GameContext';
+import { mulberry32, randomSeed } from '../../lib/random';
 import type { Country, GameContextValue, GameResult, QuizConfig } from './types';
+
+/**
+ * Construye la ronda de una config. En competitivo usa el PRNG determinista
+ * sembrado (ronda reproducible); en casual usa el RNG por defecto (Math.random).
+ */
+function buildRound(countries: readonly Country[], config: QuizConfig) {
+  return config.competitive
+    ? buildQuiz(countries, config, mulberry32(config.competitive.seed))
+    : buildQuiz(countries, config);
+}
 
 interface GameProviderProps {
   children: ReactNode;
@@ -21,7 +32,7 @@ export function GameProvider({ children, countries = [] }: GameProviderProps) {
 
   const startGame = useCallback(
     (config: QuizConfig) => {
-      const questions = buildQuiz(countries, config);
+      const questions = buildRound(countries, config);
       dispatch({ type: 'START', config, questions, startedAt: Date.now() });
     },
     [countries],
@@ -32,14 +43,26 @@ export function GameProvider({ children, countries = [] }: GameProviderProps) {
     dispatch({ type: 'ANSWER', value, at: Date.now() });
   }, []);
 
+  const timeoutCurrent = useCallback(() => {
+    // El countdown competitivo lo llama al agotar los 10 s (fallo automático).
+    dispatch({ type: 'TIMEOUT', at: Date.now() });
+  }, []);
+
   const next = useCallback(() => {
     dispatch({ type: 'NEXT', now: Date.now() });
   }, []);
 
   const restart = useCallback(() => {
     if (!state.config) return;
-    const questions = buildQuiz(countries, state.config);
-    dispatch({ type: 'RESTART', questions, startedAt: Date.now() });
+    // Competitivo: SEMILLA NUEVA en cada reinicio. Reutilizar la semilla dejaría
+    // memorizar la ronda (mismos países y mismo orden de opciones) y farmear el
+    // récord; randomSeed() garantiza una ronda distinta. El casual conserva su
+    // config tal cual (sin semilla).
+    const config = state.config.competitive
+      ? { ...state.config, competitive: { seed: randomSeed() } }
+      : state.config;
+    const questions = buildRound(countries, config);
+    dispatch({ type: 'RESTART', config, questions, startedAt: Date.now() });
   }, [countries, state.config]);
 
   const reset = useCallback(() => {
@@ -71,6 +94,7 @@ export function GameProvider({ children, countries = [] }: GameProviderProps) {
       state,
       startGame,
       answerCurrent,
+      timeoutCurrent,
       next,
       restart,
       reset,
@@ -79,7 +103,7 @@ export function GameProvider({ children, countries = [] }: GameProviderProps) {
       progress,
       result,
     };
-  }, [state, startGame, answerCurrent, next, restart, reset]);
+  }, [state, startGame, answerCurrent, timeoutCurrent, next, restart, reset]);
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }

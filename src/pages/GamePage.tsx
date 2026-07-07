@@ -15,6 +15,7 @@ export function GamePage() {
     currentAnswer,
     progress,
     answerCurrent,
+    timeoutCurrent,
     next,
     reset,
   } = useGame();
@@ -45,6 +46,9 @@ export function GamePage() {
 
   const isLast = state.currentIndex >= state.questions.length - 1;
   const sheetOpen = currentAnswer != null;
+  // Competitivo: countdown de 10 s por pregunta. Se detiene con la hoja abierta
+  // (pregunta respondida) y se remonta por pregunta (questionKey) reiniciándose.
+  const isCompetitive = state.config?.competitive != null;
 
   function handleNext() {
     if (!isLast) focusNextPrompt.current = true;
@@ -69,6 +73,16 @@ export function GamePage() {
           current={progress.current}
           total={progress.total}
           onExit={handleExit}
+          countdown={
+            isCompetitive && state.questionStartedAt != null
+              ? {
+                  startedAt: state.questionStartedAt,
+                  paused: sheetOpen,
+                  onTimeout: timeoutCurrent,
+                  questionKey: currentQuestion.id,
+                }
+              : undefined
+          }
         />
 
         {/* key => remonta la pregunta (resetea input y relanza la entrada). */}

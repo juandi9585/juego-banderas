@@ -20,8 +20,11 @@ export const initialState: GameState = {
 export type GameAction =
   | { type: 'START'; config: QuizConfig; questions: QuizQuestion[]; startedAt: number }
   | { type: 'ANSWER'; value: string; at: number } // code (MC) o texto; `at` = Date.now() al responder
+  | { type: 'TIMEOUT'; at: number } // competitivo: se agotaron los 10 s; `at` = Date.now()
   | { type: 'NEXT'; now: number }
-  | { type: 'RESTART'; questions: QuizQuestion[]; startedAt: number }
+  // RESTART lleva su propia `config`: el competitivo reinicia con SEMILLA NUEVA
+  // (config distinta), no con la de la partida anterior.
+  | { type: 'RESTART'; config: QuizConfig; questions: QuizQuestion[]; startedAt: number }
   | { type: 'RESET' };
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
@@ -75,6 +78,36 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, answers };
     }
 
+    case 'TIMEOUT': {
+      const q = state.questions[state.currentIndex];
+      // MISMA guarda idempotente que ANSWER: si la pregunta ya fue respondida
+      // (por clic o por un TIMEOUT anterior), no-op. Resuelve la carrera
+      // clic-vs-timer — gana quien llega primero; el segundo se ignora.
+      if (state.status !== 'playing' || !q || state.answers[state.currentIndex]) {
+        return state;
+      }
+      // Fallo automático: 0 puntos (correct:false) marcado con timedOut para
+      // que la hoja muestre la variante "Se acabó el tiempo" (§17). NO avanza:
+      // la hoja se abre como con cualquier respuesta y el jugador pulsa Siguiente.
+      const elapsedMs =
+        state.questionStartedAt != null
+          ? Math.max(0, action.at - state.questionStartedAt)
+          : undefined;
+
+      const record: AnswerRecord = {
+        questionId: q.id,
+        correct: false,
+        timedOut: true,
+        correctCode: q.correctCode,
+        ...(elapsedMs != null ? { elapsedMs } : {}),
+      };
+
+      const answers = state.answers.slice();
+      answers[state.currentIndex] = record;
+
+      return { ...state, answers };
+    }
+
     case 'NEXT': {
       if (state.status !== 'playing') return state;
       const isLast = state.currentIndex >= state.questions.length - 1;
@@ -93,7 +126,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'RESTART':
       return {
         status: 'playing',
-        config: state.config,
+        config: action.config, // puede traer una semilla nueva (competitivo)
         questions: action.questions,
         currentIndex: 0,
         answers: [],

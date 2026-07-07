@@ -1,5 +1,6 @@
 .topbar {
   flex: none;
+  position: relative; /* ancla de la mecha del countdown (§13.1, absolute) */
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -30,4 +31,89 @@
 .progress {
   flex: 1;
   min-width: 0;
+}
+
+/* ── Countdown competitivo (§13). Solo se monta en rondas competitivas. ──────
+   Dos instrumentos distintos: la regla de progreso (posición en la ronda,
+   crece, latón) y la mecha (tiempo de la pregunta, se consume, fría→roja). */
+
+/* Lectura numérica: slot mono RESERVADO al final de la fila (min-width fijo →
+   aparecer/desaparecer dígitos no reflota nada). aria-hidden en el componente. */
+.countdownReadout {
+  flex: none;
+  min-width: 2.5ch;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-ink-2);
+}
+
+.countdownReadout.isWarn {
+  color: var(--c-error);
+  font-weight: var(--weight-semibold);
+}
+
+/* Fase calma: glifo de cronómetro (señala "va contra reloj" sin invitar a mirar
+   los segundos). Fase urgente (≤ 3 s): el entero de segundos en rojo. */
+.countdownSeconds {
+  display: none;
+}
+.countdownReadout.isWarn .countdownGlyph {
+  display: none;
+}
+.countdownReadout.isWarn .countdownSeconds {
+  display: inline;
+}
+
+/* La mecha (fuse): lane a ras del borde inferior del panel. absolute → cero
+   altura añadida, cero layout shift; se pinta dentro de los 44px de la barra. */
+.countdownFuse {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--countdown-track-h);
+  background: var(--c-border);
+}
+
+.countdownFuse > i {
+  display: block;
+  height: 100%;
+  width: 100%; /* el componente conduce el ancho por pregunta (100% → 0%) */
+  background: var(--c-ink-2); /* calmo: Pizarra fría, instrumento, no alarma */
+  transition: width var(--dur-fast) linear;
+}
+
+/* Últimos 3 s: la mecha pasa a rojo. El cambio de color ES la señal de urgencia
+   y llega solo al final (sin rojo ni parpadeo durante los 7 s tranquilos). */
+.countdownFuse.isWarn > i {
+  background: var(--c-error);
+}
+
+/* Reduced motion (§13.3): sin drenado suave (manda la lectura numérica, que
+   pasa a mostrarse todo el rato, 10 → 0). */
+@media (prefers-reduced-motion: reduce) {
+  .countdownFuse > i {
+    transition: none;
+  }
+  .countdownGlyph {
+    display: none;
+  }
+  .countdownSeconds {
+    display: inline;
+  }
+}
+
+/* Región viva visualmente oculta: un único aviso al cruzar el umbral (§13.4). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

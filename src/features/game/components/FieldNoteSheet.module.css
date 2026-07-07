@@ -91,6 +91,10 @@
   color: var(--c-error);
 }
 
+/* La variante timeout (§17) no añade color propio: reutiliza el rojo de
+   .statusError (mismo tono, sigue siendo 0 pts). Solo cambian el glifo (◷) y el
+   copy, que los pone el componente. Sin cuarto color ni regla extra. */
+
 .statusText {
   min-width: 0;
 }

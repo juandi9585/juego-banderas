@@ -5,8 +5,9 @@
 > (`src/features/game/{types,engine,gameReducer}.ts`). Conteos calculados sobre
 > `src/data/countries.json` (194 países) el 2026-07-06.
 >
-> Marcas de acuerdo pendiente: **[A ACORDAR]** señala decisiones que necesitan el visto bueno del
-> usuario antes de implementar.
+> Marcas de acuerdo: las decisiones de formato, catálogo, puntuación y ranking se cerraron con el
+> usuario el **2026-07-06** (resumen en §7). Solo quedan abiertos el stack y la identidad de la
+> Fase 2 online (§5).
 
 ---
 
@@ -18,8 +19,8 @@ El juego tendrá **dos modalidades** que comparten el mismo motor puro y el mism
 |---|---|---|
 | Selección de categorías | **Múltiple** (mix & match libre) | **Simple** (una sola de un catálogo cerrado) |
 | Composición del pool | Unión de las categorías elegidas | Los países de la categoría elegida |
-| Longitud de la ronda | Configurable (presets del casual) | **Número fijo (~25) [A ACORDAR]** |
-| Ranking | No | **Sí, por categoría** |
+| Longitud de la ronda | Configurable (presets del casual) | **Fija: `min(20, tamaño del pool)` [DECIDIDO]** |
+| Ranking | No (puntaje informativo) | **Sí, por (categoría, modo de ronda)** |
 | Curaduría | Abierta | Catálogo cerrado y curado |
 
 **Principios de diseño:**
@@ -63,8 +64,9 @@ casual hereda.
 | `america-sur` | América del Sur | `continent === 'América del Sur'` | **12** |
 | `oceania` | Oceanía | `continent === 'Oceanía'` | **14** |
 
-`mundo` no está en la v1 descrita (6 continentes + `América`); se propone añadirlo — el casual ya
-tiene un equivalente "todos", así que encaja sin fricción. **[A ACORDAR]**
+`mundo` no estaba en la v1 (6 continentes + `América`). **[DECIDIDO 2026-07-06: entra.]** En el
+casual no se muestra como chip (el chip "Todos" ya cumple ese rol) y, si aparece en una selección,
+`canonicalCategories` la colapsa a `[]` (pool completo).
 
 ### 2.2 Nivel sub-regional (entradas nuevas; el casual las hereda)
 
@@ -79,8 +81,8 @@ subregión del dataset queda corta, se fusiona con la vecina y se indica.
 | `europa-este` | Europa del Este | `Europa Oriental (4) · Europa Central (6) · Europa Sudoriental (8)` | **18** |
 
 > La asignación de **Europa Central** al "Este" y de **Europa del Norte** (incluye los bálticos) al
-> "Oeste" es un juicio editorial; el reparto por región es transparente para poder ajustarlo. Ver
-> pregunta abierta §7.
+> "Oeste" es un juicio editorial; el reparto por región es transparente para poder ajustarlo.
+> **[DECIDIDO 2026-07-06: reparto aprobado tal cual.]**
 
 **Asia** (46 → 4 sectores):
 
@@ -93,7 +95,7 @@ subregión del dataset queda corta, se fusiona con la vecina y se indica.
 
 > `Asia Oriental` (5) y `Asia Central` (5) están por debajo de 8; se **fusionan** en un sector (la
 > franja norte de Asia, el eje de la Ruta de la Seda). Alternativa posible: repartir Central en
-> Meridional/Occidental — menos limpio; se descarta.
+> Meridional/Occidental — menos limpio; se descarta. **[DECIDIDO 2026-07-06: fusión aprobada.]**
 
 **África** (54 → 3 sectores):
 
@@ -105,6 +107,7 @@ subregión del dataset queda corta, se fusiona con la vecina y se indica.
 
 > `África del Norte` (6) y `África Austral` (5) quedan cortas; se fusionan con su vecina (Norte con
 > Occidental por el Sáhara/Sahel; Austral con Central). Quedan 3 sectores equilibrados.
+> **[DECIDIDO 2026-07-06: fusiones aprobadas.]**
 
 **América** (además de las de §2.1):
 
@@ -114,6 +117,7 @@ subregión del dataset queda corta, se fusiona con la vecina y se indica.
 
 > `América Central` (7) no llega a 8 y ya está contenida en `america-norte-centro`; no se ofrece
 > suelta. `Caribe` (13, todo estados-isla) sí es una categoría competitiva excelente por sí sola.
+> **[DECIDIDO 2026-07-06: `caribe` entra.]**
 
 **Oceanía:** sus cuatro subregiones (Australia y NZ 2, Melanesia 4, Micronesia 5, Polinesia 3) están
 **todas** por debajo de 8. No admite subdivisión competitiva: `oceania` (14) es la única categoría de
@@ -126,46 +130,36 @@ Oceanía. Se documenta y no se fuerza.
 
 ---
 
-## 3. Formato de partida
+## 3. Formato de partida — **[DECIDIDO 2026-07-06 con el usuario]**
 
-**Longitud: 25 preguntas fijas [A ACORDAR].** Propuesta de trabajo. 25 es un buen equilibrio
-(ni ronda relámpago ni maratón) y da granularidad de puntuación suficiente para un ranking.
+**Longitud: `min(20, tamaño del pool)` preguntas**, con muestreo **sin reemplazo** siempre: ningún
+país se repite dentro de una partida. Las categorías con menos de 20 países juegan partidas más
+cortas (Caribe → 13, Asia Meridional → 9) y sigue siendo justo: el ranking está segmentado por
+categoría, así que dentro de cada tabla todos juegan la misma longitud. Se descartaron las 25
+fijas con rebarajado en bloques que proponía la versión anterior de este documento.
 
-### 3.1 Modos de juego permitidos
+> Implementación: `buildQuiz` ya recorta `questionCount` al tamaño del pool filtrado — el
+> competitivo pasa `questionCount: 20` y el recorte sale gratis. No existe lógica de repetición.
 
-Existen tres modos (`flag-to-name`, `name-to-flag`, `type-name`). Para el competitivo:
+### 3.1 Modo de juego: mixto
 
-| Opción | Qué incluye | Pros | Contras |
-|---|---|---|---|
-| **A (recom.)** | Solo opción múltiple: `flag-to-name` + `name-to-flag` | Puntuación objetiva y comparable; sin ruido de tecleo | Deja fuera "escribir el nombre" |
-| B | Los 3 modos | Cubre todo el MVP | `type-name` mete ruido (velocidad de tecleo, cobertura de `aliases`) que ensucia el ranking |
-| C | Un único modo fijo (`flag-to-name`) | Ranking más simple (una tabla por categoría) | Menos variedad |
+La partida competitiva es **mixta**: la mitad de las preguntas son `flag-to-name` y la otra mitad
+`name-to-flag` (⌈n/2⌉ y ⌊n/2⌋), con el orden barajado. `type-name` queda fuera del competitivo v1:
+la velocidad de tecleo y la cobertura de alias meterían ruido injusto en un ranking donde la
+velocidad da puntos.
 
-**Recomendación: opción A.** El competitivo permite los **dos modos de opción múltiple** y **excluye
-`type-name`** por equidad. El ranking se identifica por **`(categoryId, mode)`** (dos tablas por
-categoría). Si se prefiere una sola tabla por categoría, degradar a la opción C. **[A ACORDAR]**
-
-### 3.2 Política de repetición de países dentro de la partida
-
-- **Categoría con ≥ 25 países:** muestreo **sin reemplazo** (ningún país se repite), igual que el
-  casual. Se toman 25 de los N disponibles.
-- **Categoría con < 25 países** (la mayoría de sub-regionales): se **rebaraja en bloques**. Se agota
-  el pool una vez (orden aleatorio), se vuelve a barajar y se continúa, con la única restricción de
-  **no repetir un país en preguntas consecutivas**. Ej.: `asia-meridional` (9) → cada país aparece
-  ~2–3 veces a lo largo de las 25.
+- En el motor: `RoundMode = GameMode | 'mixto'`. El modo por pregunta ya existe
+  (`QuizQuestion.mode`, y la UI renderiza según él), así que `buildQuiz` solo asigna modos
+  alternados al construir la ronda. No hace falta una función hermana.
 - Los **distractores** siempre salen del **pool de la categoría** (coherencia temática). Por eso la
   regla ≥ 8: incluso en la categoría más pequeña siempre hay 3 distractores distintos del correcto.
+- **Visión futura acordada:** una segunda variante competitiva **"escrito"** (solo `type-name`),
+  con sus propias tablas de ranking. No se implementa ahora.
 
-### 3.3 ¿Y si la categoría tiene menos países que preguntas?
+### 3.2 Identidad del ranking
 
-Las 25 preguntas **se mantienen fijas** mediante la repetición en bloques de §3.2. Esto es aceptable
-porque **el ranking es por categoría**: dentro de una misma tabla todos juegan la misma longitud
-(25) y la misma cantidad de repetición, así que las puntuaciones son comparables. La repetición solo
-afecta a categorías pequeñas y no rompe la equidad intra-categoría.
-
-> Alternativa si la repetición molesta: `questionCount = min(25, tamañoPool)`. La rechazo para el MVP
-> porque introduce longitudes distintas por categoría (25 vs 9) sin ganar comparabilidad (el ranking
-> ya está segmentado por categoría). **[A ACORDAR]**
+Por **(categoría, modo de ronda)**: la clave de récord es `` `${CategoryId}:${RoundMode}` ``. Hoy
+todas las tablas son `*:mixto`; la futura variante escrita añadiría `*:type-name` sin migración.
 
 ---
 
@@ -194,17 +188,18 @@ muestra **también en el casual** (informativo, sin ranking ni cronómetro visib
 - Redondeo con `Math.round` **por pregunta** → el total siempre es entero.
 - Puntos máximos por pregunta: `(100 + 50) × 1.5 = 225`.
 
-### 4.2 Cotas y ejemplos (25 preguntas)
+### 4.2 Cotas y ejemplos (partida competitiva de 20 preguntas)
 
 | Escenario | Puntaje |
 |---|---|
-| Partida perfecta (25 aciertos, todos ≤ 2 s) | **5 400** (900 en la rampa de racha + 20 × 225) |
-| 25 aciertos, todos lentos (sin bonus) | 3 600 |
-| 20 aciertos seguidos rápidos + 5 fallos | ~4 275 |
-| 13 aciertos alternados (racha nunca > 1), lentos | 1 300 |
+| Partida perfecta (20 aciertos, todos ≤ 2 s) | **4 275** (900 en la rampa de racha + 15 × 225) |
+| 20 aciertos, todos lentos (sin bonus) | 2 850 |
+| Techo en categorías cortas: pool 13 (Caribe) | 2 700 |
+| Techo con pool 9 (Asia Meridional) | 1 800 |
 
-La velocidad y la racha pueden superar a quien tiene 1–2 aciertos más — decisión consciente del
-usuario (adrenalina y remontadas por encima de jerarquía estricta de conocimiento).
+Con `min(20, pool)` cada tabla de ranking tiene su propio techo (comparable dentro de la
+categoría). La velocidad y la racha pueden superar a quien tiene 1–2 aciertos más — decisión
+consciente del usuario (adrenalina y remontadas por encima de jerarquía estricta de conocimiento).
 
 ### 4.3 Medición del tiempo
 
@@ -236,6 +231,7 @@ export interface Score {
   accuracy: number;    // correct / total
   maxStreak: number;   // mejor racha de la partida
   durationMs?: number; // finishedAt - startedAt (si está disponible)
+  answeredMs: number;  // suma de elapsedMs — solo tiempo respondiendo (desempate de récords, §5)
 }
 
 export function computeScore(result: GameResult): Score;
@@ -246,9 +242,9 @@ cual (sus `elapsedMs` largos dan bonus 0). Se invoca en la `ResultPage` (hueco `
 El puntaje casual es **solo informativo**: no alimenta ranking ni récords (categorías mezcladas y
 `questionCount` variable lo hacen incomparable por diseño).
 
-> Requisito de datos: la acción `ANSWER` del reducer (la costura de gamificación) pasa a registrar
-> `elapsedMs` y `timedOut`. El reducer marca el inicio de cada pregunta en `START`/`NEXT` y el
-> provider inyecta los timestamps (mismo patrón que `startedAt` hoy).
+> Requisito de datos: `elapsedMs` **ya está implementado** (commit `d5e8853`: la acción `ANSWER`
+> lo calcula desde `questionStartedAt`, marcado en `START`/`NEXT`). `timedOut` lo escribe la nueva
+> acción `TIMEOUT` del competitivo (§6).
 
 ---
 
@@ -260,35 +256,41 @@ Persistencia en **`localStorage`** vía un **`RecordsProvider` independiente del
 (la costura §5.4 del plan: un provider que envuelve la app y **no acopla** al motor de juego).
 
 ```ts
-// Identidad de un récord: categoría + modo (ver §3.1)
-type RecordKey = `${CategoryId}:${GameMode}`;
+// Identidad de un récord: categoría + modo de ronda (ver §3.2). Hoy siempre ':mixto'.
+type RecordKey = `${CategoryId}:${RoundMode}`;
 
 interface RecordEntry {
   points: number;
   correct: number;
   total: number;
   maxStreak: number;
-  durationMs: number;
+  durationMs: number;   // = Score.answeredMs: solo tiempo respondiendo (la ficha no cuenta)
   achievedAt: number;   // Date.now()
 }
 
 interface RecordsContextValue {
-  getBest(categoryId: CategoryId, mode: GameMode): RecordEntry | null;
-  submit(categoryId: CategoryId, mode: GameMode, entry: RecordEntry): boolean; // true si es nuevo récord
+  getBest(categoryId: CategoryId, mode: RoundMode): RecordEntry | null;
+  submit(categoryId: CategoryId, mode: RoundMode, entry: RecordEntry): boolean; // true si es nuevo récord
 }
 ```
 
 - Se guarda **la mejor marca por `(categoryId, mode)`**: mejor `points`; a igualdad, más `correct`;
-  a igualdad, menor `durationMs`. Opcional: histórico de N últimas partidas.
+  a igualdad, menor `durationMs`. **[DECIDIDO 2026-07-07]** el `durationMs` del récord es la
+  **suma de los `elapsedMs`** de las respuestas (`Score.answeredMs`): solo cuenta el tiempo
+  respondiendo — leer la ficha de datos entre preguntas no penaliza el desempate. Opcional:
+  histórico de N últimas partidas.
 - Flujo: al terminar (`status === 'finished'`), la `ResultPage` llama a `computeScore`, luego a
   `submit(...)`, y muestra el resultado vs. el récord previo ("¡Nuevo récord!"). Esto **rellena el
   hueco `TODO`** de la `ResultPage`.
 - El `RecordsProvider` lee de `localStorage` al montar y escribe en cada `submit`. No sabe nada del
   `GameProvider`; solo recibe datos ya calculados.
 
-### Fase 2 — Leaderboard online (esbozo, NO se decide aún)
+### Fase 2 — Leaderboard online — **[DECIDIDO 2026-07-06: objetivo real, pospuesto]**
 
-Objetivo potencial, **fuera del alcance actual**. Boceto conceptual:
+El usuario confirmó que el leaderboard online **sí es un objetivo del proyecto**, pero se
+implementa después; la Fase 1 deja lista la pieza barata que evita reescribir: la **semilla
+determinista** (`QuizConfig.competitive.seed` + PRNG `mulberry32`), con la que cada ronda
+competitiva es reproducible desde hoy. Boceto conceptual del resto:
 
 - **Backend:** Vercel Functions (serverless) + una base de datos (candidatos: Vercel Postgres,
   Vercel KV / Upstash Redis). **Sin decidir.**
@@ -297,65 +299,69 @@ Objetivo potencial, **fuera del alcance actual**. Boceto conceptual:
 - **Anti-trampa (a nivel de concepto):** el motor es **determinista con RNG inyectable**. Un cliente
   puede enviar `{ seed, categoryId, mode, answers[] }`; el servidor **reconstruye la misma ronda**
   con esa `seed` y el mismo motor puro y **recomputa el score** (no confía en el `points` del
-  cliente). Requeriría exponer la `seed` como parte de `QuizConfig`/`buildQuiz` — hoy no existe, se
-  añadiría solo si la Fase 2 se aprueba. Complementos: rate-limiting y validación de rangos.
-- **Qué NO se decide aún:** si el leaderboard online es siquiera un objetivo, el stack de DB, el
-  modelo de identidad, y si se introduce `seed` determinista. Todo esto queda **explícitamente
-  abierto**.
+  cliente). La `seed` **ya existe desde la Fase 1** (`QuizConfig.competitive.seed`). Complementos:
+  rate-limiting y validación de rangos.
+- **Qué NO se decide aún:** el stack de DB y el modelo de identidad de jugador. Esto queda
+  **explícitamente abierto** hasta que se aborde la Fase 2.
 
 ---
 
-## 6. Impacto en el código existente
+## 6. Impacto en el código existente — **[diseño final 2026-07-06]**
+
+Con `min(20, pool)` no hay repetición → **no existe `buildCompetitiveQuiz`**: se extiende
+`buildQuiz` mínimamente (el modo por pregunta ya existía en `QuizQuestion.mode`).
 
 ### Se añade (nuevo)
-- `src/features/game/categories.ts` — **ya lo está creando el frontend-engineer**; el competitivo
-  aporta las entradas de §2.2 (y `mundo` de §2.1). El casual las hereda sin cambios.
-- `src/features/game/score.ts` — `computeScore` puro (§4).
-- Composición de ronda competitiva con repetición en bloques (§3.2): **preferible** como función
-  hermana pura (p. ej. `buildCompetitiveQuiz(pool, config, rng)`) que reutiliza `buildQuestion` /
-  `pickDistractors`, **sin tocar** `buildQuiz`. Alternativa: un flag opcional en `buildQuiz`
-  (`{ cycle: true }`); se prefiere la función hermana para no arriesgar el comportamiento del casual.
-- `src/features/records/` — `RecordsProvider.tsx`, `useRecords.ts`, `records.ts` (localStorage).
-- UI/rutas del competitivo: pantalla de **selección simple** de categoría (radio, no checklist) y
-  reutilización de `GamePage`; la `ResultPage` gana el panel de récord.
+- `src/features/game/categories.ts` — las 11 entradas nuevas (§2.1 `mundo` + §2.2) con matchers
+  por `region`, y un campo `group: 'continente' | 'sector'` para agrupar las UIs. Total: 18.
+- `src/lib/random.ts` — `mulberry32(seed)` (PRNG determinista) y `randomSeed()`.
+- `src/features/records/` — `records.ts` (puro, localStorage `banderas:records:v1`),
+  `RecordsProvider.tsx`, `useRecords.ts`. Mejor marca por `RecordKey`: más `points` → más
+  `correct` → menor `durationMs` (= suma de `elapsedMs`, §5).
+- `CompetitivePage` (ruta `/competitivo`): selección **simple** (radio) de las 18 categorías
+  agrupadas, con países / nº de preguntas / récord por opción; CTA que arranca
+  `{ mode: 'mixto', categories: [id], questionCount: 20, competitive: { seed: randomSeed() } }`.
+- `QuestionCountdown` en `GamePage` (solo competitivo): 10 s por pregunta contra
+  `SCORE_TIME_LIMIT_MS`, calculado en cada tick desde `Date.now() − questionStartedAt` (reloj de
+  pared: volver de background no regala tiempo); al agotarse llama `timeoutCurrent()`.
 
 ### Cambia (mínimo)
-- `AnswerRecord` gana `elapsedMs` (y `timedOut?`); la acción `ANSWER` los registra y `START`/`NEXT`
-  marcan el inicio de cada pregunta (timestamps inyectados por el provider, como `startedAt` hoy).
-  Necesario también para mostrar el puntaje en casual (§4).
-- UI de `GamePage` en competitivo: cuenta regresiva visible de 10 s con fallo automático al agotarse.
-- `QuizConfig` gana la dimensión de categoría. El competitivo usa **una** categoría
-  (`categoryId: CategoryId`); el casual usa **varias**. La forma exacta del tipo la fija el
-  frontend-engineer al crear `categories.ts` (probable: casual `categoryIds: CategoryId[]`,
-  competitivo `categoryId: CategoryId`). El **pool filtrado** se calcula aplicando el/los matcher(s)
-  y se pasa a `buildQuiz` / `buildCompetitiveQuiz` **como hoy**.
-- `ResultPage` — se activa el hueco reservado del plan §5.5 (score + récord).
+- `QuizConfig`: `mode` pasa a `RoundMode = GameMode | 'mixto'`; gana
+  `competitive?: { seed: number }` (su presencia marca la ronda competitiva). La categoría del
+  récord es `categories[0]` (el competitivo pasa exactamente una — invariante de su UI).
+- `buildQuiz`: si `mode === 'mixto'`, construye el array de modos (⌈n/2⌉ `flag-to-name` +
+  ⌊n/2⌋ `name-to-flag`, barajado) y se lo pasa a `buildQuestion` pregunta a pregunta.
+- `gameReducer`: nueva acción `TIMEOUT` — misma guarda idempotente que `ANSWER` (resuelve la
+  carrera clic-vs-timer), escribe `{ correct: false, timedOut: true, elapsedMs }`.
+- `GameProvider`: con `competitive` usa `mulberry32(seed)`; `restart` genera **semilla nueva**
+  (reutilizarla permitiría memorizar la ronda y farmear el récord); expone `timeoutCurrent()`.
+- `FieldNoteSheet`: variante de status "Se acabó el tiempo — era X" cuando `answer.timedOut`.
+- `ResultPage`: en competitivo, `submit` del récord (guarda anti doble-submit de StrictMode) +
+  banner "¡Nuevo récord!" / "Récord: N pts".
+- `CategoryMultiPicker` (casual): agrupa en "Continentes" / "Sectores" y oculta `mundo` (el chip
+  "Todos" ya cumple ese rol). `canonicalCategories` trata `mundo` como equivalente a `[]`.
+- `App.tsx` / `AppHeader`: ruta `/competitivo`, `RecordsProvider` envolviendo, enlace "Competitivo".
 
 ### NO cambia
-- `pickDistractors`, `buildQuestion`, `checkChoice`, `checkTypedAnswer` — intactos.
-- `buildQuiz` — sigue recibiendo **pool ya filtrado + `questionCount`** y muestreando sin reemplazo;
-  el casual no se altera.
-- Núcleo del `gameReducer` — la acción `ANSWER` ya es la costura de puntuación; no requiere cambios
-  para la Fase 1 (el score se calcula al final desde `GameResult`).
-- `GameState.startedAt` / `finishedAt` — ya existen; solo pasan a **usarse**.
+- `pickDistractors`, `buildQuestion`, `checkChoice`, `checkTypedAnswer`, `score.ts` — intactos.
+- El renderizado de preguntas de `GamePage` (ya elige componente por `currentQuestion.mode`).
+- El flujo casual completo: sin countdown, sin timeout, sin récords, mismos presets.
 
 ---
 
-## 7. Preguntas abiertas para el usuario
+## 7. Preguntas abiertas — **TODAS RESUELTAS con el usuario (2026-07-06)**
 
-1. **Nº de preguntas:** ¿**25** fijas? ¿otro valor?
-2. **Modos permitidos:** ¿opción **A** (dos modos de opción múltiple, sin `type-name`) — recomendada?
-   ¿o incluir `type-name` (B) / fijar un solo modo (C)?
-3. **Identidad del ranking:** ¿tabla por **`(categoría, modo)`** o una sola tabla por categoría?
-4. **Categorías a incluir/excluir:** ¿añadir **`mundo`** (194) y **`caribe`** (13)? ¿alguna sobra o
-   falta?
-5. **Reparto Europa Este/Oeste:** ¿OK que **Central → Este** y **del Norte (bálticos) → Oeste**? ¿o
-   se prefiere otra granularidad (p. ej. 3 sectores)?
-6. **Fusiones:** ¿OK `Asia Oriental + Central`, `África Norte + Occidental`, `África Central +
-   Austral`?
-7. **Categorías pequeñas:** con < 25 países, ¿mantener 25 fijas con repetición en bloques
-   (recomendado) o usar `min(25, pool)`?
-8. ~~**Puntuación**~~ — **RESUELTA (2026-07-06):** sistema estilo Kahoot con bonus de velocidad,
-   racha ×1.1→×1.5, límite duro de 10 s en competitivo y puntaje informativo en casual. Ver §4.
-9. **Ranking online (Fase 2):** ¿es un **objetivo real**? Si lo es, ¿stack de DB e identidad de
-   jugador? (hoy sin decidir).
+1. **Nº de preguntas:** → **20**, con `min(20, pool)` (§3).
+2. **Modos permitidos:** → **mixto**: mitad `flag-to-name` + mitad `name-to-flag` en la misma
+   partida. `type-name` queda como **variante competitiva futura "escrito"** (§3.1).
+3. **Identidad del ranking:** → **(categoría, modo de ronda)**: `` `${CategoryId}:${RoundMode}` ``
+   (§3.2).
+4. **Categorías:** → entran **`mundo`** y **`caribe`**. Catálogo final: **18** (§2).
+5. **Reparto Europa Este/Oeste:** → aprobado tal cual (Central → Este; Norte/bálticos → Oeste).
+6. **Fusiones:** → aprobadas las 3 (Asia Oriental+Central, África Norte+Occidental, África
+   Central+Austral).
+7. **Categorías pequeñas:** → `min(20, pool)`; se descartó la repetición en bloques.
+8. **Puntuación:** → estilo Kahoot con bonus de velocidad, racha ×1.1→×1.5, límite duro de 10 s en
+   competitivo y puntaje informativo en casual (§4). Implementada en `score.ts`.
+9. **Ranking online (Fase 2):** → **objetivo real, pospuesto**. La semilla determinista se
+   implementa desde la Fase 1; stack de DB e identidad de jugador siguen abiertos (§5).

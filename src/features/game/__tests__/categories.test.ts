@@ -34,6 +34,22 @@ describe('canonicalCategories', () => {
     expect(canonicalCategories(all)).toEqual([]);
   });
 
+  it("'mundo' en la selección colapsa a [] (equivale al pool completo)", () => {
+    expect(canonicalCategories(['mundo'])).toEqual([]);
+    // Aunque venga acompañada de otras categorías.
+    expect(canonicalCategories(['mundo', 'europa', 'africa'])).toEqual([]);
+  });
+
+  it("seleccionar TODAS menos 'mundo' (las 17 seleccionables) colapsa a []", () => {
+    const allButWorld = GAME_CATEGORIES.filter((c) => c.id !== 'mundo').map((c) => c.id);
+    expect(allButWorld).toHaveLength(17);
+    expect(canonicalCategories(allButWorld)).toEqual([]);
+  });
+
+  it("una selección parcial sin 'mundo' NO colapsa", () => {
+    expect(canonicalCategories(['europa', 'caribe'])).toEqual(['europa', 'caribe']);
+  });
+
   it('[] se mantiene []', () => {
     expect(canonicalCategories([])).toEqual([]);
   });

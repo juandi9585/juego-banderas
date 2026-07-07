@@ -533,3 +533,465 @@ altas la bandera crece hasta su techo (220px) y el resto se centra.
   - La `FlagImage` héroe usa `--flag-hero-max-h` (contenedor con `aspect-ratio` + `max-height`).
 - **Sin cambios** en la paleta, la tipografía, el signature ni el resto de componentes: esta
   iteración es puramente de **layout + un patrón modal**, dentro del sistema ya definido.
+
+---
+
+# Iteración 3 — Modo competitivo (Fase 1: récords locales)
+
+> Origen: `docs/competitivo.md` (§3–§5), decisiones **cerradas con el usuario el 2026-07-06**.
+> Se añade una modalidad "seria" y de marca: partidas de `min(20, pool)` preguntas en modo
+> **mixto** (mitad bandera→nombre, mitad nombre→bandera, barajadas), **límite duro de 10 s** por
+> pregunta con cuenta regresiva visible, **récord local por (categoría, modo)** y un **catálogo de
+> 18 categorías** (7 continentes + 10 sectores + "Mundo"). Aquí solo se **especifica**; implementa
+> frontend-engineer. Todo se mantiene dentro del sistema ya fijado (carta náutica / guía de campo,
+> marca de hoist, latón con disciplina, mono para lecturas de instrumento). **No se toca la paleta
+> ni la tipografía**; se declara **un solo token nuevo** (`--countdown-track-h`) y una variable de
+> estado en runtime (`--countdown-fill`). Regla de Chanel: el competitivo **no** añade un mundo
+> visual nuevo — reutiliza el signature (hoist que "prende" a latón) para la selección y el récord,
+> y el mono para el tiempo. La única concesión de color semántico nueva es la **variante timeout**,
+> y se resuelve **sin** inventar un tercer color (icono + copy sobre el rojo ya existente).
+
+## 13. `QuestionCountdown` — cuenta regresiva de 10 s (solo competitivo)
+
+**Problema.** `/jugar` no scrollea y todo cabe en 360×640 (§11). El countdown **no puede robar
+altura ni provocar layout shift**, y debe transmitir urgencia **creciente** sin ansiedad constante
+(nada de dígitos parpadeando los 10 s). En el mundo del sujeto, el tiempo es una **lectura de
+instrumento**: una **mecha que se consume** en el borde del panel + un cronómetro en mono. Se
+integra **dentro del `GameTopBar`**, no como fila nueva.
+
+**Anatomía (variante competitiva del `GameTopBar`, 44px, sin altura extra):**
+
+```
+┌──────────────────────────────────────────────────────┐ 44px  (--game-topbar-h)
+│ [✕]   ══════ regla de progreso ══════  03/10    ◷    │  ← fila normal + slot mono reservado
+│▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂│  ← §13.1 mecha (fuse) a ras del borde inferior
+└──────────────────────────────────────────────────────┘        drena de 100%→0% en 10 s, lineal
+```
+
+Dos instrumentos, dos hechos distintos (structure = information, skill §"Structure is information"):
+- **Regla de progreso** (§5.6): *posición en la ronda*. **Crece** izq→der, **latón**, con ticks,
+  inline en la fila.
+- **Mecha del countdown**: *tiempo de la pregunta*. **Se consume** (der→izq), **fría** (Pizarra) y
+  solo **roja** al final, a ras del borde inferior del panel. Distinta en grosor, posición, color y
+  sentido de movimiento → nunca se confunde con la regla ni compite con la bandera.
+
+### 13.1 La mecha (fuse) — representación ambiente, por defecto
+
+- **Posición**: hija del `.topbar` (que pasa a `position: relative`), a sangre en el borde inferior
+  (`left/right/bottom: 0`), alto `--countdown-track-h` (**3px**). Es **absolute** → **cero altura
+  añadida, cero layout shift**. Se pinta *dentro* de los 44px de la barra.
+- **Comportamiento**: el relleno drena de `width: 100%` a `0%` en los ms restantes, **lineal**
+  (el tiempo no acelera). El ancho lo conduce el runtime con la variable de estado `--countdown-fill`
+  (o una `transition: width linear` cuya duración = ms restantes, fijada al montar la pregunta).
+- **Color (urgencia creciente, sin ansiedad constante):**
+  - Lane (fondo): `--c-border` (tenue).
+  - Relleno **calmo** (t > 3 s): `--c-ink-2` (Pizarra, frío; instrumento, no alarma). AA como
+    elemento de UI.
+  - Relleno **urgente** (t ≤ 3 s): `--c-error` (Rojo señal). El cambio de color **es** la señal de
+    urgencia, y llega **solo al final** → no hay rojo ni parpadeo durante los 7 s tranquilos.
+- **Sin pulso por defecto** ("quita un accesorio"): el cambio de color basta. Un latido opcional del
+  relleno rojo se **descarta** por sobriedad y por reduced-motion.
+
+### 13.2 Lectura numérica (escalada, no reloj permanente)
+
+Slot mono **reservado** al final de la fila (`min-width: 2.5ch`, `tabular-nums`) → aparecer/desaparecer
+dígitos **no reflota** nada.
+- **Con motion** (por defecto): en fase calma muestra un **glifo de cronómetro** `◷` en `--c-ink-3`
+  (señala "esto va contra reloj" sin dígitos que inviten a mirar el reloj). En los **últimos 3 s**
+  muestra el entero de segundos (`3` → `2` → `1`) en `--c-error`, `--weight-semibold`. La aparición
+  del dígito rojo **es** el golpe de urgencia buscado.
+- El slot es `aria-hidden` (no se locuta cada segundo).
+
+### 13.3 `prefers-reduced-motion: reduce`
+
+- **Sin drenado animado**: la mecha no transiciona su `width` (queda estática a `--c-ink-2`, o se
+  oculta).
+- **La lectura numérica pasa a primaria**: el slot muestra los segundos **todo el rato** (10 → 0),
+  estáticos por segundo (cambio de contenido, no animación CSS), en `--c-ink-2` y **rojo** desde ≤ 3 s.
+  Así el usuario con reduced-motion conserva una cuenta regresiva **numérica/estática** clara y AA
+  (exactamente lo pedido).
+
+### 13.4 Accesibilidad — sin spam de `aria-live`
+
+- Todo el instrumento visual va `aria-hidden="true"`: **no** se anuncia cada segundo.
+- Una **única** región visualmente oculta (`aria-live="assertive"`, one-shot) anuncia al cruzar el
+  umbral: **"Quedan 3 segundos."** — una sola vez por pregunta, se limpia al avanzar. (Assertive
+  porque es urgente y sensible al tiempo; un solo mensaje no es spam.)
+- La **expiración** la anuncia la hoja (§17, `aria-live="polite"` de la barra de estado: "Se acabó
+  el tiempo — era X"). El countdown no duplica ese anuncio.
+- El foco no vive en el countdown (no es interactivo). Al agotarse el tiempo se registra fallo
+  automático (`timedOut: true`) y **se abre `FieldNoteSheet`** en variante timeout (§17), que atrapa
+  el foco como cualquier respuesta.
+
+### 13.5 Ciclo de vida y no-conflictos
+
+- Solo se monta en rondas competitivas (`RoundMode === 'mixto'` / flag `timed`); **el casual no lo
+  renderiza** (sin countdown ni timeout, §competitivo 4.3). El `GameTopBar` casual queda intacto.
+- El reloj arranca cuando la pregunta queda activa (mismo `elapsedMs` de §competitivo 4.3) y **se
+  detiene** al responder o al expirar (cuando se abre la hoja; el fondo queda `inert` tras el scrim).
+  Reloj de pared, sin pausas.
+- Umbral de aviso = **3 s** (constante de lógica, p. ej. `SCORE_TIME_WARN_MS = 3000` en `score.ts`;
+  **no** es un token CSS).
+
+**CSS de referencia** (frontend-engineer lo lleva a CSS Modules del `GameTopBar`):
+```css
+.topbar { position: relative; }              /* ancla de la mecha */
+
+.countdownFuse {                              /* lane a ras del borde inferior */
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: var(--countdown-track-h);           /* 3px */
+  background: var(--c-border);
+}
+.countdownFuse > i {                          /* relleno que drena */
+  display: block; height: 100%;
+  width: var(--countdown-fill, 100%);         /* 100%→0% en los ms restantes, lineal */
+  background: var(--c-ink-2);
+}
+.countdownFuse.isWarn > i { background: var(--c-error); }   /* últimos 3 s */
+
+.countdownReadout {                           /* slot mono reservado (sin shift) */
+  flex: none; min-width: 2.5ch; text-align: right;
+  font-family: var(--font-mono); font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums; color: var(--c-ink-3);
+}
+.countdownReadout.isWarn { color: var(--c-error); font-weight: var(--weight-semibold); }
+
+@media (prefers-reduced-motion: reduce) {
+  .countdownFuse > i { transition: none; }    /* sin drenado suave; manda el número */
+}
+```
+
+## 14. `CompetitivePage` (`/competitivo`) — selección de zona
+
+**Tesis de la página (hero = lo más característico).** No es el formulario relajado del Home
+(segmented + chips + espécimen). El competitivo es una **contrarreloj**: eliges **dónde** competir y
+vas a por tu **récord**. El hero es esa promesa dicha con voz de instrumento, no un "número gigante
++ stats + gradiente" (patrón plantilla que la skill marca como default: evitado).
+
+**Cómo se distingue del casual (a propósito):**
+- Casual = **multi-select** de chips-pill (mezcla libre, lúdico).
+- Competitivo = **single-select** de **filas-dossier** (una decisión seria), agrupadas, con **lectura
+  de récord** en latón. Filas grandes y escaneables, no pills.
+- Framing temporal propio ("Contrarreloj", "10 segundos por bandera") ausente en el casual.
+
+### 14.1 Layout (móvil 360, la lista scrollea — esto **no** es `/jugar`)
+
+```
+┌───────────────────────────────────┐
+│ Modo competitivo        (eyebrow)  │  mono, uppercase, --c-accent-ink
+│ Contrarreloj             (h1)      │  display --text-2xl
+│ 10 segundos por bandera. Elige     │  --c-ink-2, --text-sm
+│ dónde competir y bate tu récord.   │
+│                                    │
+│ ┌───────────────────────────────┐ │  ← "Mundo" destacada (primera)
+│ │▌ Mundo             194 países  │ │     hoist SIEMPRE latón
+│ │  Los 194 países · 20 preguntas │ │     récord a la derecha
+│ └───────────────────────────────┘ │
+│                                    │
+│ Continentes           (subhead)    │  mono, --text-xs, --c-ink-3
+│ ┌───────────────────────────────┐ │
+│ │▌ África        54 países · 20  │ │  fila-dossier (radio oculto)
+│ │                Récord 3.200 pts│ │  récord en latón (--c-accent-ink)
+│ └───────────────────────────────┘ │
+│ … Asia, Europa, América, A. N. y   │
+│   Centro, A. del Sur, Oceanía      │
+│                                    │
+│ Sectores              (subhead)    │
+│ ┌───────────────────────────────┐ │
+│ │▌ Europa del Oeste 27 países·20 │ │
+│ │                   Aún sin récord│ │  sin récord → --c-ink-3
+│ └───────────────────────────────┘ │
+│ … 10 sectores                      │
+│                                    │
+│┌─────────────────────────────────┐│  ← §14.4 barra CTA sticky (bottom)
+││          Comenzar               ││
+│└─────────────────────────────────┘│
+└───────────────────────────────────┘
+```
+
+### 14.2 La fila-dossier (item de selección)
+
+Anatomía (reutiliza superficie, borde, radio y **el signature**):
+- **Marca de hoist** a la izquierda (`--hoist-width`, radio del lado izquierdo): **neutra**
+  (`--c-border-strong`) sin seleccionar, **latón** (`--c-accent`) al seleccionar. El hoist **es** el
+  indicador de radio: "esta es la carta que has sacado". Uso on-brand del signature para el
+  radiogroup (no un check genérico).
+- **Nombre** en display `--text-lg`, `--weight-semibold`, sentence case.
+- **Meta** en mono `--text-2xs`, `--c-ink-3`: `"{n} países · {q} preguntas"` con `q = min(20, pool)`
+  (honesto por fila: Caribe → "13 países · 13 preguntas"; África → "54 países · 20 preguntas").
+- **Récord** a la derecha, mono `--text-xs`:
+  - Con récord: `"Récord {pts} pts"` en `--c-accent-ink` (latón, la única cifra premiada — coherente
+    con `.streak` de ResultPage). `{pts}` con formato `toLocaleString('es-ES')` → "3.200".
+  - Sin récord: `"Aún sin récord"` en `--c-ink-3`.
+- **Estados**: normal (superficie + borde neutro + `--shadow-sm`); **seleccionada**
+  (`--c-accent-tint` + borde `--c-accent` + hoist latón); **foco** (`--shadow-focus` de latón). Alto
+  ≥ 64px (tap cómodo).
+
+**Mundo** (destacada, primera, sobre los dos grupos): misma anatomía con más presencia — hoist
+**siempre latón**, radio `--radius-xl`, y un descriptor en la meta ("Los 194 países · 20 preguntas").
+Es la carta insignia.
+
+### 14.3 Agrupación y jerarquía (18 items, escaneable)
+
+- Orden: **Mundo** (destacada) → grupo **"Continentes"** (7: África, Asia, Europa, América, América
+  del Norte y Centro, América del Sur, Oceanía) → grupo **"Sectores"** (10: Europa del Oeste, Europa
+  del Este, Asia Occidental, Sudeste Asiático, Asia Meridional, Asia Oriental y Central, África del
+  Norte y Occidental, África Oriental, África Central y Austral, Caribe).
+- **Subheads** de grupo: mono `--text-xs`, `--weight-medium`, uppercase, `--tracking-wide`,
+  `--c-ink-3`, con `margin: --space-4 0 --space-2`. Discretos (son ecos del mono, no titulares).
+- Filas separadas por `--space-2` dentro del grupo.
+
+### 14.4 CTA, selección y navegación
+
+- **Radiogroup** único: `<input type="radio" name="zona">` visualmente oculto dentro del `<label>`
+  de cada fila (navegación con flechas, foco nativo). Contenedor `role="radiogroup"`
+  `aria-label="Elige dónde competir"`. Los subheads son `<h2>` visuales dentro del grupo (no rompen
+  el radiogroup).
+- **Sin selección por defecto**: la CTA **"Comenzar"** (Button primario, 52px) está **deshabilitada**
+  (`aria-disabled`) hasta elegir; helper bajo la CTA: **"Primero elige dónde competir."** Al elegir,
+  la CTA se activa; `Comenzar` → `startGame({ categoryId, mode: 'mixto', questionCount: 20 })` →
+  `/jugar`.
+- **Barra CTA sticky** al fondo (`position: sticky; bottom: 0`), a sangre
+  (`margin-inline: calc(-1 * --space-4)`), con degradado de papel para que el contenido no choque, y
+  `padding-bottom: max(--space-3, env(safe-area-inset-bottom))`.
+- **Entrada a la vista** (hand-off, fuera de este doc): añadir **"Competir"** al `AppHeader` (pasa a
+  3 enlaces: Jugar · Competir · Explorar) y/o un botón secundario "Jugar contrarreloj" en Home.
+
+**CSS de referencia** (CSS Module nuevo `CompetitivePage.module.css`):
+```css
+.groupHead {                                   /* subhead Continentes/Sectores */
+  margin: var(--space-4) 0 var(--space-2);
+  font-family: var(--font-mono); font-size: var(--text-xs);
+  font-weight: var(--weight-medium); text-transform: uppercase;
+  letter-spacing: var(--tracking-wide); color: var(--c-ink-3);
+}
+.regions { display: grid; gap: var(--space-2); }
+
+.region {                                      /* label envolviendo el radio oculto */
+  position: relative; display: grid;
+  grid-template-columns: 1fr auto; align-items: center;
+  gap: var(--space-1) var(--space-3);
+  min-height: 64px;
+  padding: var(--space-3) var(--space-4);
+  padding-left: calc(var(--space-4) + var(--hoist-width));
+  background: var(--c-surface);
+  border: var(--border-thin) solid var(--c-border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-standard),
+              background-color var(--dur-fast) var(--ease-standard);
+}
+.region::before {                              /* marca de hoist (signature) */
+  content: ''; position: absolute; inset: 0 auto 0 0;
+  width: var(--hoist-width); background: var(--c-border-strong);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+}
+.region:has(:checked) { background: var(--c-accent-tint); border-color: var(--c-accent); }
+.region:has(:checked)::before { background: var(--c-accent); }        /* hoist prende */
+.region:has(:focus-visible) { box-shadow: var(--shadow-focus); }
+
+.regionName { font-family: var(--font-display); font-size: var(--text-lg); font-weight: var(--weight-semibold); }
+.regionMeta { grid-column: 1; font-family: var(--font-mono); font-size: var(--text-2xs); color: var(--c-ink-3); }
+.regionRecord {
+  grid-column: 2; grid-row: 1 / span 2; align-self: center; text-align: right;
+  font-family: var(--font-mono); font-size: var(--text-xs); color: var(--c-accent-ink);
+  white-space: nowrap;
+}
+.regionRecord.isEmpty { color: var(--c-ink-3); }
+
+.world { border-radius: var(--radius-xl); }    /* Mundo destacada */
+.world::before { background: var(--c-accent); border-radius: var(--radius-xl) 0 0 var(--radius-xl); }
+
+.startBar {
+  position: sticky; bottom: 0;
+  margin-inline: calc(-1 * var(--space-4));
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--c-bg) 72%, transparent);
+}
+.startHint { margin-top: var(--space-2); font-family: var(--font-mono); font-size: var(--text-xs); color: var(--c-ink-3); text-align: center; }
+```
+
+## 15. Banner de récord en `ResultPage` (solo competitivo)
+
+Se integra en el `.scorePanel` ya existente (§ResultPage): mismo bloque, dos estados. El casual **no
+cambia** (panel informativo tal cual). La celebración es **sobria y de marca**: no confeti — el
+panel **"prende" a latón** (eco literal del acierto, §7: "la marca de hoist prende a Latón").
+
+**Estado A — ¡Nuevo récord!** (puntaje actual > mejor previo, o primer récord):
+```
+┌▌────────────────────────────┐   ▌ hoist de logro (latón), izquierda
+│ ¡Nuevo récord!               │   eyebrow mono uppercase, --c-accent-ink
+│ 3.480                        │   cifra en LATÓN (--c-accent)
+│ Mejor racha: 9 seguidas      │   (línea existente)
+│ Superaste tu récord de 3.200 │   mono --c-ink-2 (qué batiste)
+└──────────────────────────────┘
+```
+- El panel gana `border-color: --c-accent`, un **hoist** latón a la izquierda (`--hoist-width`,
+  radio `--radius-md`), la cifra `.scorePoints` en `--c-accent`, y un **settle** al montar
+  (escala 1→1.03→1, `--ease-spring`, `--dur`) — el mismo asentado del acierto. Bajo reduced-motion,
+  sin settle (solo el color/hoist).
+- Copys: eyebrow **"¡Nuevo récord!"**; línea inferior **"Superaste tu récord de {previo} pts"**; si
+  era el primero, **"Tu primer récord"**.
+
+**Estado B — normal** (no superó el récord): el panel se queda como hoy y añade **una línea inferior**
+con la marca a batir, mono `--text-sm`, `--c-ink-2`: **"Récord {mejor} pts"**. Sin latón de logro
+(el latón se reserva para el logro real).
+
+**Accesibilidad**: el resultado del récord se anuncia una vez al aterrizar en ResultPage. El foco ya
+va al titular (`headingRef`); el nuevo récord puede exponerse con `aria-live="polite"` en el panel (o
+integrarse en el `aria-label` del panel: `"Puntaje de la ronda. Nuevo récord."`). Sin animación
+intrusiva. `{pts}` siempre con `toLocaleString('es-ES')`.
+
+**CSS de referencia** (se añade a `ResultPage.module.css`, junto a `.scorePanel`):
+```css
+.scorePanel.isRecord {
+  position: relative; border-color: var(--c-accent);
+  padding-left: calc(var(--space-4) + var(--hoist-width));
+  animation: recordSettle var(--dur) var(--ease-spring);
+}
+.scorePanel.isRecord::before {
+  content: ''; position: absolute; inset: 0 auto 0 0;
+  width: var(--hoist-width); background: var(--c-accent);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+.scorePanel.isRecord .scorePoints { color: var(--c-accent); }
+.recordFlag {                                  /* eyebrow "¡Nuevo récord!" */
+  font-family: var(--font-mono); font-size: var(--text-xs);
+  font-weight: var(--weight-semibold); text-transform: uppercase;
+  letter-spacing: var(--tracking-wide); color: var(--c-accent-ink);
+}
+.recordPrev, .recordToBeat {                   /* "Superaste…" / "Récord … pts" */
+  margin-top: var(--space-1);
+  font-family: var(--font-mono); font-size: var(--text-sm); color: var(--c-ink-2);
+}
+@keyframes recordSettle { 0% { transform: scale(1); } 40% { transform: scale(1.03); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .scorePanel.isRecord { animation: none; } }
+```
+
+## 16. `CategoryMultiPicker` (casual) — de 7 a 17 chips agrupados
+
+El catálogo compartido pasa a 18 categorías; en el casual se muestran **17 chips** (todas menos
+`mundo`, que ya cubre el chip **"Todos"**) + el chip "Todos". Para que 17 chips sigan escaneables se
+**agrupan** bajo dos subtítulos discretos, **sin romper el flex-wrap** de los chips.
+
+**Layout** (dentro del campo "Categorías" del Home; los subheads son **un nivel por debajo** del
+`.fieldLabel` "Categorías", por eso más ligeros que él):
+```
+Categorías                         (.fieldLabel — display, existente)
+[ Todos ]                          chip maestro, en su propia fila
+Continentes                        (.groupHead — mono, --text-xs, --c-ink-3)
+[África][América][A. N. y Centro][A. del Sur][Asia][Europa][Oceanía]   ← .chips flex-wrap
+Sectores                           (.groupHead)
+[Europa del Oeste][Europa del Este][Asia Occidental][Sudeste Asiático]
+[Asia Meridional][Asia Oriental y Central][África del Norte y Occidental]
+[África Oriental][África Central y Austral][Caribe]                     ← .chips flex-wrap
+```
+
+- **Chips sin cambios**: mismo `.chip`/`.selected` de `ContinentPicker.module.css` (cero CSS de chip
+  nuevo; misma a11y `aria-pressed`).
+- **Subheads**: reutilizan el patrón `.groupHead` de §14.3 (mono `--text-xs`, `--weight-medium`,
+  uppercase, `--tracking-wide`, `--c-ink-3`). `margin-top: --space-3` entre grupos, `margin-bottom:
+  --space-2`. Idénticos a los de `CompetitivePage` → un solo lenguaje de agrupación en toda la app.
+- **Estructura**: un contenedor por grupo, cada uno con su subhead + su `.chips` (flex-wrap propio).
+  "Todos" queda **fuera** de los grupos (es el toggle maestro).
+- **Copys** de subhead: **"Continentes"**, **"Sectores"** (el chip maestro sigue siendo **"Todos"**).
+- **Accesibilidad**: el `role="group" aria-label="Categorías"` exterior se mantiene; cada grupo interno
+  es un `role="group"` con `aria-label="Continentes"` / `"Sectores"` (o `aria-labelledby` al subhead).
+  Los botones-chip no cambian.
+
+```css
+.categoryGroups { display: grid; gap: var(--space-3); }   /* wrapper del picker */
+.groupHead {                                              /* = §14.3, compartido */
+  margin: var(--space-3) 0 var(--space-2);
+  font-family: var(--font-mono); font-size: var(--text-xs);
+  font-weight: var(--weight-medium); text-transform: uppercase;
+  letter-spacing: var(--tracking-wide); color: var(--c-ink-3);
+}
+/* .chips y .chip: sin cambios (ContinentPicker.module.css) */
+```
+
+## 17. `FieldNoteSheet` — variante **timeout** de la barra de estado (§A)
+
+Cuando la respuesta llega por **tiempo agotado** (`answer.timedOut === true`), la barra de estado §A
+(§10.2) usa una **tercera variante**. Se mantiene la **misma barra** y el **mismo tono rojo** (sigue
+siendo un fallo de 0 pts): **no se inventa un cuarto color** — sería romper la regla anti-semáforo
+(§9). Lo que cambia es el **icono** y el **copy**, que aclaran "fue el tiempo, no un toque erróneo".
+
+| Variante | Icono | Copy | Color |
+|----------|-------|------|-------|
+| Acierto | `✓` | "¡Correcto!" | success (existente) |
+| Fallo (tap) | `✕` | "Era **{País}**" | error (existente) |
+| **Timeout** | `◷` | **"Se acabó el tiempo — era {País}"** | **error** (mismo `.statusError`) |
+
+- **Icono**: reloj `◷` en el chip `--c-error-tint` / `--c-error` (misma caja del icono §A). El glifo
+  de reloj lleva la carga semántica "tiempo".
+- **Copy**: **"Se acabó el tiempo — era {País}"** con `{País}` en `<strong>` (se sigue enseñando el
+  país, como en el fallo por tap; em dash "—", sentence case, voz directa).
+- **Motion**: la variante error del icono podía hacer *shake* (§10.5); **timeout NO hace shake** — un
+  temblor connota "toque equivocado", y aquí no lo hubo. El icono aparece estático (o un fade suave),
+  reforzando el matiz por el movimiento. Bajo reduced-motion, estático (igual que el resto).
+- **Accesibilidad**: la barra §A ya es `aria-live="polite"` y se anuncia al abrir la hoja → locuta
+  "Se acabó el tiempo — era {País}" **una sola vez** (esta es la locución de expiración que el
+  countdown §13.4 delega en la hoja). El `aria-label` del `role="dialog"` pasa a **"Se acabó el
+  tiempo"** en esta variante (hoy: "Respuesta correcta"/"Respuesta incorrecta").
+
+```css
+/* reutiliza .statusError (color rojo); solo cambia el glifo del icono y suprime el shake */
+.statusTimeout { color: var(--c-error-ink); }
+.statusTimeout .statusIcon { background: var(--c-error-tint); color: var(--c-error); }
+/* .statusTimeout NO aplica la animación de shake del error */
+```
+
+## 18. Tokens y copys de la Iteración 3 (resumen)
+
+### 18.1 Tokens nuevos a añadir a `tokens.css` (los añade el owner; aquí solo se declaran)
+- `--countdown-track-h: 3px;` — grosor de la **mecha** del countdown (§13.1). Coherente con
+  `--hoist-width: 4px` (tokens de trazo fino del signature). **Único token de diseño nuevo.**
+- Variable de **estado en runtime** (no es token de paleta, la fija el componente por pregunta):
+  `--countdown-fill` — porcentaje restante de la mecha (100% → 0%).
+
+Todo lo demás **reutiliza** tokens existentes: colores `--c-ink-2` / `--c-error` / `--c-accent` /
+`--c-accent-ink` / `--c-accent-tint` / `--c-border` / `--c-border-strong`; `--hoist-width`; radios;
+`--shadow-sm` / `--shadow-focus`; `--ease-spring` / `--dur`; escala tipográfica y `--font-mono` /
+`--font-display`. **Dark mode**: gratis (todos esos tokens ya tienen variante dark). **Sin tokens de
+color nuevos.**
+
+### 18.2 Constante de lógica (no CSS, para frontend-engineer)
+- `SCORE_TIME_WARN_MS = 3000` (umbral de urgencia del countdown, §13.5) — vive en `score.ts` junto a
+  `SCORE_TIME_LIMIT_MS`.
+
+### 18.3 Copys nuevos (español, sentence case, voz directa)
+| Lugar | Copy exacto |
+|-------|-------------|
+| Countdown · aviso AT (one-shot, §13.4) | **"Quedan 3 segundos."** |
+| CompetitivePage · eyebrow | **"Modo competitivo"** |
+| CompetitivePage · título (h1) | **"Contrarreloj"** |
+| CompetitivePage · subtítulo | **"10 segundos por bandera. Elige dónde competir y bate tu récord."** |
+| CompetitivePage · subheads | **"Continentes"** · **"Sectores"** |
+| CompetitivePage · meta de fila | **"{n} países · {q} preguntas"** (`q = min(20, pool)`) |
+| CompetitivePage · Mundo (meta) | **"Los 194 países · 20 preguntas"** |
+| CompetitivePage · récord de fila | **"Récord {pts} pts"** / sin récord **"Aún sin récord"** |
+| CompetitivePage · CTA | **"Comenzar"** |
+| CompetitivePage · helper CTA deshab. | **"Primero elige dónde competir."** |
+| CompetitivePage · aria radiogroup | **"Elige dónde competir"** |
+| ResultPage · nuevo récord (eyebrow) | **"¡Nuevo récord!"** |
+| ResultPage · qué batiste | **"Superaste tu récord de {previo} pts"** / primero: **"Tu primer récord"** |
+| ResultPage · récord a batir (normal) | **"Récord {mejor} pts"** |
+| CategoryMultiPicker · subheads | **"Continentes"** · **"Sectores"** (+ chip maestro **"Todos"**) |
+| FieldNoteSheet · barra de estado timeout | **"Se acabó el tiempo — era {País}"** |
+| FieldNoteSheet · aria-label diálogo (timeout) | **"Se acabó el tiempo"** |
+
+> `{pts}` / `{previo}` / `{mejor}` siempre con `toLocaleString('es-ES')` (p. ej. "3.200"). `{País}`
+> en `<strong>`.
+
+### 18.4 Componentes afectados (hand-off; **no** se tocan aquí)
+- `GameTopBar` — variante competitiva: `position: relative` + mecha (§13.1) + slot de lectura
+  (§13.2). El casual, intacto.
+- `GamePage` — en rondas competitivas monta el countdown y aplica el timeout (fallo automático →
+  `FieldNoteSheet` variante §17). Sin cambios de layout de `/jugar` (§11 se respeta: cero altura extra).
+- **`CompetitivePage`** (nueva) + su CSS Module (§14) y ruta `/competitivo`; entrada desde `AppHeader`
+  ("Competir").
+- `ResultPage` / `ResultPage.module.css` — panel de récord (§15) cuando la ronda es competitiva.
+- `CategoryMultiPicker` — agrupación con subheads (§16), reutilizando chips de `ContinentPicker`.
+- `FieldNoteSheet` / su CSS — variante `.statusTimeout` (§17).

@@ -41,16 +41,28 @@ export type Country = {
 
 export type GameMode = 'flag-to-name' | 'name-to-flag' | 'type-name';
 
+// Modo de una RONDA. Además de los 3 modos por pregunta, el competitivo añade
+// 'mixto' (alterna los 2 de opción múltiple pregunta a pregunta). La variante
+// futura "escrito" (solo 'type-name') encaja aquí sin migrar (docs/competitivo
+// §3.1). `QuizQuestion.mode` sigue siendo un GameMode concreto (nunca 'mixto').
+export type RoundMode = GameMode | 'mixto';
+
 // Filtro de selección SIMPLE por continente ('all' = todos). Hoy solo lo usa
 // Explorar; el juego filtra por `QuizConfig.categories` (selección múltiple).
 export type ContinentFilter = Continent | 'all';
 
 export interface QuizConfig {
-  mode: GameMode;
+  mode: RoundMode; // competitivo v1: siempre 'mixto'
   // Ids canónicos del catálogo de categorías (orden del catálogo, sin
   // duplicados); [] = todas las categorías (pool completo).
+  // COMPETITIVO: contiene EXACTAMENTE UNA categoría (invariante de su UI) —
+  // `categories[0]` es la clave del récord (incluye 'mundo' sin canonicalizar).
   categories: CategoryId[];
   questionCount: number; // preset o total del pool filtrado ("todas")
+  // Presencia = ronda COMPETITIVA (countdown de 10 s, timeout, récord). La
+  // semilla hace la ronda reproducible (mulberry32) — pieza de la validación
+  // en servidor de la Fase 2 (docs/competitivo.md §5).
+  competitive?: { seed: number };
 }
 
 export type QuestionKind = 'multiple-choice' | 'text-input';
@@ -74,9 +86,9 @@ export interface AnswerRecord {
   // La hoja de datos curiosos entre preguntas NO cuenta (el reloj se reinicia
   // en NEXT). Ausente si no había base temporal. Fuente del bonus de velocidad.
   elapsedMs?: number;
-  // COSTURA del competitivo futuro (§4.3): el countdown de 10 s lo marcará al
-  // agotarse (fallo automático). HOY NADIE lo escribe (el casual no tiene
-  // timeout); se declara aquí para no reescribir el tipo al implementarlo.
+  // Competitivo (§4.3): la acción TIMEOUT del reducer lo marca cuando se agota
+  // el countdown de 10 s (fallo automático). En el casual no hay timeout, así
+  // que allí queda ausente y la respuesta es un fallo por toque erróneo normal.
   timedOut?: boolean;
 }
 
@@ -114,6 +126,7 @@ export interface GameContextValue {
   // Acciones
   startGame: (config: QuizConfig) => void;
   answerCurrent: (value: string) => void; // code (MC) o texto (escribir)
+  timeoutCurrent: () => void; // competitivo: fallo automático al agotar los 10 s
   next: () => void;
   restart: () => void; // nueva ronda con el mismo config
   reset: () => void; // vuelve a idle
