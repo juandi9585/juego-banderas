@@ -1,0 +1,156 @@
+/* Aviso de instalación de la PWA (docs/design.md §27): tarjeta "edición de
+   bolsillo" con el hoist de latón en el canto izquierdo (signature del sistema,
+   inset 12px de las esquinas como en las pestañas). Discreta: superficie normal,
+   sin colores nuevos; el único cálido es el hoist y el CTA de latón. */
+.card {
+  position: relative;
+  padding: var(--space-4);
+  padding-left: calc(var(--space-4) + var(--hoist-width));
+  background: var(--c-surface);
+  border: var(--border-thin) solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: var(--hoist-width);
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  background: var(--c-accent);
+}
+
+.head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--c-accent-ink);
+  margin-bottom: var(--space-1);
+}
+
+.title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+/* Cierre: caja táctil de 44px sin inflar la tarjeta (margen negativo). */
+.close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0 0;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xl);
+  line-height: 1;
+  color: var(--c-ink-3);
+  transition: color var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard);
+}
+
+.close:hover {
+  color: var(--c-ink);
+  background: var(--c-surface-2);
+}
+
+.body {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--c-ink-2);
+}
+
+/* CTA compacto de latón (no el Button de 52px a ancho completo: esto es un
+   aviso, no la acción principal de la página). */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--c-accent-strong);
+  color: var(--c-on-accent);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-sm);
+  transition: filter var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.cta:hover {
+  filter: brightness(1.06);
+}
+
+.cta:active {
+  transform: translateY(1px);
+}
+
+.chevron {
+  font-size: var(--text-lg);
+  line-height: 1;
+  transform: rotate(90deg);
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.chevronOpen {
+  transform: rotate(-90deg);
+}
+
+/* Disclosure plegable (mismo truco 0fr↔1fr que Sectores, §26.4.3). */
+.collapsible {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--dur) var(--ease-standard);
+}
+
+.isCollapsed {
+  grid-template-rows: 0fr;
+}
+
+.collapsibleInner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Espaciado como padding DENTRO del inner (un margin quedaría fuera del área
+   recortada y dejaría un hueco con el panel plegado). */
+.steps {
+  padding-top: var(--space-3);
+  padding-left: var(--space-5);
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--c-ink-2);
+}
+
+.steps strong {
+  color: var(--c-ink);
+  font-weight: var(--weight-semibold);
+}
+
+.shareIcon {
+  display: inline-block;
+  vertical-align: -2px;
+  color: var(--c-accent-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta:active {
+    transform: none;
+  }
+}

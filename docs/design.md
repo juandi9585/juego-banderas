@@ -1897,3 +1897,31 @@ Todo lo demás reutiliza tokens existentes: `--c-accent`/`--c-accent-tint`/`--c-
 - **`CompetitivePanel`** — **sin cambios de C**; su `SegmentedControl` (Mixto|Escrito) hereda el thumb
   slider automáticamente (mismo componente). Su ledger es la referencia que el casual espeja.
 - **`tokens.css`** — bloque "Iteración C": `--dur-slide`, `--shadow-thumb` (+ override dark). (§26.7)
+
+---
+
+# 27 · Aviso de instalación de la PWA — "Edición de bolsillo"
+
+Tarjeta descartable en el módulo Jugar (entre el masthead y las pestañas) que ofrece instalar
+la app. Solo aparece cuando hay algo real que ofrecer; nunca corre instalada (standalone).
+
+## 27.1 Estados (`usePwaInstall`, src/features/pwa/)
+- **`installable`** — Chromium (Android/escritorio) disparó `beforeinstallprompt`: el CTA
+  "Instalar la app" lanza el **diálogo nativo** (el evento se captura con `preventDefault`
+  para suprimir el mini-infobar y es de un solo uso).
+- **`ios`** — iPhone/iPad en navegador (UA + `maxTouchPoints` para iPadOS-como-Mac): no hay
+  API de instalación, así que el CTA es un **disclosure** "Cómo instalarla" con los 3 pasos de
+  Compartir → Añadir a pantalla de inicio (mismo patrón plegable 0fr↔1fr + `inert` que
+  Sectores, §26.4.3; icono Compartir inline en `currentColor`).
+- **`hidden`** — standalone (`display-mode` o `navigator.standalone`), descartada hace
+  <14 días (`banderas:install-dismissed:v1`), o navegador sin señal (Firefox escritorio).
+  Rechazar el diálogo nativo también cuenta como descarte.
+
+## 27.2 Anatomía visual
+Tarjeta de superficie normal con **hoist de latón** en el canto izquierdo (4px, inset 12px de
+las esquinas — signature del sistema): la "edición de bolsillo" de la guía. Eyebrow mono
+EDICIÓN DE BOLSILLO en `--c-accent-ink`, título display "Lleva la guía contigo", cuerpo sm en
+`--c-ink-2`, CTA compacto de latón (`--c-accent-strong`, 44px, NO el Button de 52px: es un
+aviso, no la acción principal de la página). Cierre × con caja táctil de 44px (margen
+negativo). Cero tokens nuevos. Reduced-motion: hereda el reset global (disclosure y chevron
+instantáneos).

@@ -2,6 +2,7 @@ import { useState, type CSSProperties } from 'react';
 import { NavLink } from 'react-router-dom';
 import { countries, TOTAL_COUNTRIES } from '../../data/dataset';
 import { FlagImage } from '../../components/FlagImage';
+import { InstallPrompt } from '../../components/InstallPrompt';
 import { CasualPanel } from './CasualPanel';
 import { CompetitivePanel } from './CompetitivePanel';
 import styles from './PlayPage.module.css';
@@ -41,6 +42,10 @@ export function PlayPage({ tab }: { tab: PlayTab }) {
           </p>
         </div>
       </header>
+
+      {/* Aviso de instalación de la PWA (§27): solo aparece si hay algo que
+          ofrecer (Chromium instalable o guía iOS) y es descartable 14 días. */}
+      <InstallPrompt />
 
       {/* viewTransition (§23.5): react-router 6.30 lo envuelve en
           document.startViewTransition (con fallback si no hay soporte). Solo el
