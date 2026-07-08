@@ -1,3 +1,4 @@
+import { type CSSProperties } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { findCountry } from '../data/dataset';
 import { FlagImage } from '../components/FlagImage';
@@ -23,11 +24,20 @@ export function CountryDetailPage() {
 
       <FlagImage country={country} size="lg" active />
 
-      <header>
-        <h1 className={styles.name}>{country.name}</h1>
-        {country.officialName && country.officialName !== country.name && (
-          <p className={styles.official}>{country.officialName}</p>
-        )}
+      <header className={styles.header}>
+        {/* Silueta del país (§24.3): perezosa (solo la visitada; no va al precache)
+            y teñida por máscara. Decorativa: el nombre ya está en el <h1>. */}
+        <span
+          className={styles.headerShape}
+          style={{ '--shape-src': `url(/shapes/countries/${country.code}.svg)` } as CSSProperties}
+          aria-hidden="true"
+        />
+        <div>
+          <h1 className={styles.name}>{country.name}</h1>
+          {country.officialName && country.officialName !== country.name && (
+            <p className={styles.official}>{country.officialName}</p>
+          )}
+        </div>
       </header>
 
       <dl className={styles.data}>

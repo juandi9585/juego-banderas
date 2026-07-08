@@ -1069,3 +1069,412 @@ Las 18 zonas dejan de ser cards sueltos (72px c/u) y pasan a **un solo card-ledg
 | Masthead · eyebrow | **"Guía de campo · {N} países"** |
 
 Sin tokens nuevos: pestañas y ledger reutilizan hoist, radios, capilares y la escala mono existente.
+
+---
+
+# Iteración B — Juice de UX (sonido, animación, siluetas)
+
+> Origen: `docs/roadmap.md §B` (decisiones **cerradas**: B.1 sonido ON + mute persistente, B.2
+> animación con salida en reduced-motion, B.3 siluetas en ledger/chips/Explorar). Objetivo: darle
+> **sensación de juego** sin romper la sobriedad de la guía de campo. La consigna del roadmap manda:
+> **"brillo de latón, no confeti"**. Aquí se **especifica** la dirección visual/motion/sonora con
+> valores concretos; implementa frontend-engineer. Propiedad de ui-designer: este doc + `tokens.css`.
+> Se añaden tokens de brillo/glow/duración/silueta (§25) y **cero** cambios de paleta o tipografía.
+
+## 20. Principios de la iteración (léelos antes de cada decisión)
+
+1. **El sonido es de instrumento, no de arcade.** La app es un cuaderno de campo con un instrumento
+   de latón: los sonidos son **latón cálido templado** (campanilla / diapasón) y **madera** (el toc
+   del cuaderno), nunca ondas cuadradas chillonas. **Firma sonora: todo está afinado a La (A440)** —
+   el diapasón del instrumento de campo. Los positivos giran sobre la tríada de La mayor (La–Do♯–Mi);
+   los negativos caen a un La/Mi graves y sordos de madera (misma tonalidad, ánimo invertido); el tic
+   es el La agudo (el escape del cronómetro). Es memorable, barato y fiel al tema.
+2. **El brillo se gasta en un solo sitio: el récord.** El único momento "fanfarria" (sonora y visual)
+   es *Nuevo récord*. Todo lo demás son micro-acentos discretos. Regla de Chanel aplicada al juice.
+3. **Sonido y movimiento son ejes independientes.** El **mute** gobierna el audio; `prefers-reduced-
+   motion` gobierna las animaciones. Un usuario con reduced-motion **sigue oyendo** los sonidos (el
+   audio no es movimiento); un usuario con mute **sigue viendo** las animaciones. Cada animación de
+   §23 declara su **salida digna** en reduced-motion.
+4. **Nada es solo-sonido ni solo-movimiento (AA).** Todo evento con audio tiene su equivalente visual
+   (chip de estado, color, cifra) y viceversa. El juice **refuerza**, nunca **porta** información.
+5. **No robar altura ni protagonismo.** `/jugar` sigue sin scroll (§11); las siluetas y el chip de
+   racha se integran en huecos ya reservados, con **cero layout shift**. Si algo compite con las
+   banderas, gana la bandera.
+
+## 21. Paleta sonora — 6 eventos (sintetizables)
+
+Los 6 WAV se **generan** con un script Node propio (`scripts/gen-sounds.mjs`, sin samples ni
+librerías): por muestra se suman parciales senoidales, se aplica la envolvente, se añade ruido donde
+se indica, se pasa por un one-pole lowpass cuando toca, se normaliza al **pico** objetivo y se
+escribe **WAV mono 22 050 Hz 16-bit** (cabecera de 44 B). Salida en `public/sounds/` (precacheados
+por la PWA → offline). Todos llevan **fade-in de 2 ms** y **fade-out de 3 ms** para no chasquear al
+truncar.
+
+**Familia tímbrica (dos materiales):**
+- **Latón** (positivos, tic): síntesis aditiva de parciales `f, 2f, 3f` con amplitudes `1.0, 0.5,
+  0.18` (octava rica + tercer parcial que da el filo metálico). Inarmonicidad leve para brillo:
+  `2f→2.01f`, `3f→3.02f`. Golpe percutido: **sin sustain**, ataque cortísimo y **decaimiento
+  exponencial** `a(t)=e^(−t/τ)`.
+- **Madera** (negativos): **onda triangular** grave (armónicos impares suaves) con **caída rápida de
+  tono** + un **transitorio de ruido** al ataque (2–6 ms) que da el "toc" de contacto. El ruido pasa
+  por un one-pole LP `y+=k·(x−y)` con `k≈0.4` (fc≈1.4 kHz) para que sea madera, no siseo.
+
+| # | Evento | Material / onda | Notas (Hz) | Envolvente (ataque · τ decay) | Duración | Nivel (rel · pico) |
+|---|--------|-----------------|------------|-------------------------------|----------|--------------------|
+| 1 | **Acierto** | Latón `f,2f,3f` | **Do♯5 = 554.37** (una nota) | ataque 3 ms · τ 55 ms | **150 ms** | 1.00 · **−3 dBFS** |
+| 2 | **Hito de racha** | Latón (hermano del acierto) | **Do♯5 554.37 → Sol♯5 830.61** (quinta ↑; 2ª nota entra a 55 ms, solapa) | ataque 2 ms · τ 40 ms por nota | **130 ms** | 0.85 · **−4 dBFS** |
+| 3 | **Fallo (toque)** | Madera: triangular + ruido | glide **147 → 110** en 40 ms | ataque 2 ms · τ 45 ms; ruido 15 ms | **180 ms** | 0.80 · **−4 dBFS** |
+| 4 | **Timeout** | Madera: **dos toques** ↓ | toc A **165**, toc B **110** (entra a 110 ms) | por toc: ataque 2 ms · τ 50 ms | **240 ms** | 0.80 · **−4 dBFS** |
+| 5 | **Tic de urgencia** | Latón corto `f,2f` (2f a 0.20) | **La5 = 880** | ataque 1 ms · τ 18 ms | **55 ms** | 0.45 · **−8 dBFS** |
+| 6 | **Récord nuevo** | Latón, arpegio + cola | **La4 440 · Do♯5 554.37 · Mi5 659.25 · La5 880** (onsets ~70 ms) | notas 1–3: ataque 4 ms · τ 70 ms; nota 4: ataque 8 ms · τ 180 ms + trémolo 5 Hz prof. 12% y parcial 4f a 0.10 (el "sheen") | **520 ms** | 0.90 · **−2 dBFS** |
+
+**Carácter buscado por evento:**
+- **Acierto** — un "ting" de latón limpio y cálido; suena en *cada* acierto, así que ligero y corto.
+- **Hito de racha** — el acierto que **sube una quinta**: se oye literalmente "escalar". Suena **en
+  lugar** del acierto cuando el multiplicador sube (§22.3), nunca a la vez (un solo sonido por
+  respuesta). Un único asset "hacia arriba" por cada subida (no cinco notas distintas: coste bajo,
+  lectura clara). Tras el tope (×1.5) vuelve el acierto normal.
+- **Fallo** — un "toc" de madera grave y breve: decepción sin castigo. **No** es un zumbido
+  electrónico (sería arcade/agresivo).
+- **Timeout** — hermano del fallo (sigue siendo 0 pts, igual que el rojo compartido de §17): dos
+  toques de madera **descendentes**, como el cronómetro que se detiene. Distinto del fallo por el
+  segundo toque más grave — mismo material, gesto distinto.
+- **Tic de urgencia** — un escape de latón muy corto y **muy bajo** (−8 dBFS): se repite en t=3,2,1
+  s, no puede sobresaltar. La cuenta la lleva el dígito rojo; el tic solo la subraya.
+- **Récord** — el único "fanfarria": la tríada de La mayor **ascendiendo** y la última nota que
+  **florece** con trémolo (eco sonoro del barrido de latón visual, §23.4). Cálido y breve, jamás
+  jingle de 8-bit.
+
+**Presupuesto (mono 22 050 Hz 16-bit = 44 100 B/s):** 6.5 + 5.6 + 7.8 + 10.3 + 2.4 + 22.4 ≈ **55 KB**
+< 60 KB. Holgura para las colas. Si el récord aprieta, recorta su cola a ~460 ms antes que tocar el
+resto. **La última nota del récord es la única > 300 ms** (permitido para el récord).
+
+**Normalización:** generar en Float32 con el nivel relativo indicado, luego **pico-normalizar** al
+dBFS objetivo (headroom, sin clipping al sumar parciales). dBFS→lineal: −2=0.79, −3=0.71, −4=0.63,
+−8=0.40.
+
+## 22. Módulo de sonido + toggle de mute
+
+### 22.1 Módulo `src/lib/sound.ts` (contrato; lo implementa frontend-engineer)
+- **WebAudio** (no `<audio>`): un único `AudioContext`, un `GainNode` maestro (mute = `gain 0/1`), y
+  6 `AudioBuffer` decodificados de los WAV (bajos, se `fetch`+`decodeAudioData` en el primer gesto).
+  WebAudio permite **solapado** sin cortar (tic sobre acierto, hito) y latencia mínima.
+- **API**: `play(id)`, `setMuted(bool)`, `isMuted()`, con
+  `id ∈ 'acierto' | 'racha' | 'fallo' | 'timeout' | 'tick' | 'record'`. `play` es no-op si `muted`.
+- **Desbloqueo iOS/Safari (B.1)**: `AudioContext` se crea/`resume()` en el **primer gesto** (un
+  listener global one-shot en `pointerdown`/`keydown`; el tap de "Empezar"/"Comenzar" o de una
+  pestaña sirve). Sin audio antes de eso — restricción de plataforma, no un bug.
+- **Persistencia**: estado en `localStorage` **`banderas:sound`** (`"on"`/`"off"`), **ON por
+  defecto** (ausente ⇒ ON). `setMuted` lo persiste; `sound.ts` es la única fuente de verdad del mute.
+
+### 22.2 Dónde suena cada evento (tabla de disparo)
+| Evento | Disparador | Modo |
+|--------|-----------|------|
+| `acierto` | respuesta correcta que **no** sube el multiplicador (racha 1, o racha ≥ 7 con ×1.5 topado) | casual + competitivo |
+| `racha` | respuesta correcta que **sube** el multiplicador (racha 2→6, ×1.1→×1.5) — **sustituye** al acierto | casual + competitivo |
+| `fallo` | respuesta incorrecta por toque/texto (`correct === false && !timedOut`) | casual + competitivo |
+| `timeout` | fallo automático por tiempo (`timedOut === true`) | solo competitivo |
+| `tick` | cada vez que el entero de segundos baja dentro de la ventana warn (t=3, 2, 1) | solo competitivo |
+| `record` | al aterrizar en `ResultPage` con **nuevo récord** (una vez) | solo competitivo |
+
+- **Acierto/hito/fallo/timeout**: el efecto vive donde ya se conoce el resultado — un `useEffect` en
+  `GamePage` sobre la **aparición** de `currentAnswer` (nueva respuesta). Regla de decisión exacta en
+  §22.3.
+- **Tick**: lo dispara `QuestionCountdown` cuando `seconds` decrece dentro de `isWarn` (ya calcula
+  ambos). Tres tics por pregunta como máximo.
+- **Record**: `ResultPage`, en el mismo punto donde decide el estado A del banner (§15).
+
+### 22.3 Racha en vivo y regla acierto-vs-hito (para frontend-engineer)
+El reducer **no** lleva la racha en vivo (comentario "costura gamificación" en `gameReducer.ts`); se
+**deriva** de `state.answers` sin tocar el motor:
+- `rachaActual` = aciertos consecutivos **hasta e incluyendo** la pregunta recién respondida.
+- `mult(r) = min(1 + 0.1·(r − 1), 1.5)` (idéntica a `computeScore`).
+- Al registrar una respuesta correcta: `subió = mult(rachaActual) > mult(rachaActual − 1)` (verdadero
+  para racha 2..6; falso en racha 1 y racha ≥ 7). `subió` ⇒ `play('racha')` **y** pop del chip
+  (§23.1); si no ⇒ `play('acierto')`. Así el sonido y el pop van **en lockstep** con el multiplicador.
+
+### 22.4 Toggle de mute — ubicación, icono, copy
+**Ubicación (decisión): en dos sitios, un solo estado.**
+1. **`AppHeader`** (chrome global, presente en Jugar y Explorar): hogar de la preferencia global. Icono
+   a la derecha del `nav`, tras "Explorar".
+2. **`GameTopBar`** durante la partida: el `AppHeader` está oculto en `/jugar` (§11) y es justo cuando
+   el sonido importa. Va en el **canto derecho** de la barra, en **ambos** modos (en casual es el único
+   control de la derecha; en competitivo va tras la lectura del countdown). Ancla la esquina derecha de
+   forma consistente.
+   - **No** se duplica en el masthead de `PlayPage` (el `AppHeader` está justo encima).
+
+**Orden en `GameTopBar`** (44px): `[✕ Salir] · [regla de progreso · flex] · [×1.3 racha] · [◷ 3
+countdown] · [🔊 sonido]`. El icono de sonido es 28px visual con toque de 44px (margen negativo, como
+`✕`). Cabe en 360px: fijos ≈ exit 44 + racha ~30 + countdown ~22 + mute ~32 + gaps; la regla flexiona.
+
+**Icono (SVG inline, `currentColor`, monocromo — es chrome, no semántico):**
+- **Sonido ON**: altavoz con dos ondas. Color `--c-ink-2` (hover `--c-ink`).
+- **Silenciado**: altavoz con barra diagonal (slash). Color `--c-ink-3` (atenuado = inactivo).
+
+**Accesibilidad / copy (español, sentence case):**
+- `<button>` con **nombre estable** `aria-label="Sonido"` + **`aria-pressed`** que refleja el estado
+  (`true` = sonido activado). El icono aporta el estado visual.
+- `title` para puntero: **"Silenciar sonido"** cuando está ON, **"Activar sonido"** cuando está
+  silenciado.
+- Toque mínimo 44px, foco visible (halo de latón heredado de `:focus-visible`).
+
+## 23. Animaciones (cada una con su salida en `prefers-reduced-motion`)
+
+Todas usan tokens de duración/easing existentes salvo los nuevos de §25. El reset de `tokens.css` ya
+neutraliza `animation-duration`/`transition-duration` bajo reduced-motion; **además** cada componente
+evita `transform`/opacidad-animada allí y adopta la salida estática que se indica.
+
+### 23.1 Pop del contador de racha (nuevo chip en `GameTopBar`)
+El chip de racha es un **texto mono** (no una pastilla boxy: se mantiene sobrio, como la lectura del
+countdown): `×1.3` en `--font-mono`, `--text-sm`, `tabular-nums`, color `--c-accent-ink` (latón). Se
+muestra **solo cuando el multiplicador > 1.0** (racha ≥ 2); a ×1.0 el slot queda vacío (reservado,
+`min-width: 3.2ch`, sin layout shift). Se muestra en **ambos** modos (la calma del casual se conserva:
+el chip solo aparece cuando ya vas en racha).
+
+- **Motion**: al subir el multiplicador, `streakPop` con el **`--ease-spring` existente** (el mismo
+  "asentado" del acierto): `scale(1) → 1.18 → 1` en `--dur` (200 ms), `transform-origin: center`. El
+  dígito se actualiza en el pico. Sin brillo extra (el latón del color ya lo dice).
+- **Reduced-motion**: **sin scale**. La cifra simplemente **cambia** de valor (p. ej. `×1.2`→`×1.3`) en
+  latón — el cambio de número + el latón **son** la señal. Dignísimo y AA.
+
+```css
+.streak {                                   /* GameTopBar.module.css */
+  flex: none; min-width: 3.2ch; text-align: right;
+  font-family: var(--font-mono); font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums; color: var(--c-accent-ink);
+}
+.streak.isBump { animation: streakPop var(--dur) var(--ease-spring); }
+@keyframes streakPop { 0%,100% { transform: scale(1); } 45% { transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) { .streak.isBump { animation: none; } }
+```
+> Implementación: aplicar `isBump` al re-render cuando el valor sube (efecto sobre el multiplicador, o
+> `key`={mult} para remontar y relanzar la animación). Quitar la clase al terminar.
+
+### 23.2 Micro-flash de la opción correcta / confirmación del escrito
+Suma al *settle* de escala que ya existe (§7) un **anillo verde que florece y se apaga** en el instante
+en que se revela el acierto — un "bloom" de confirmación.
+
+- **Opciones (flag→name / name→flag)**: sobre la opción `.correct`, `correctFlash` una vez, `--dur`
+  `--ease-out`: `box-shadow` de `0 0 0 0 var(--glow-correct)` → `0 0 0 6px transparent`. Va **junto** al
+  settle `1→1.03→1` ya definido. Es un pulso de luz hacia afuera, no un parpadeo de fondo.
+- **Escrito (`type-name`)**: al acertar, el borde del input pasa a Verde tierra (§5.3) **y** el mismo
+  anillo `correctFlash` alrededor del campo + el ✓ que aparece con fade. Al fallar: borde Rojo señal,
+  **sin shake** (un error de tecleo no merece temblor; el nombre correcto se ve en la hoja).
+- **Reduced-motion**: sin anillo ni scale. El estado verde **estático** (borde 2px `--c-success` + ✓,
+  ya especificado en §5.2/§5.3) **es** la confirmación.
+
+```css
+.option.correct { animation: correctFlash var(--dur) var(--ease-out); }
+@keyframes correctFlash {
+  from { box-shadow: 0 0 0 0 var(--glow-correct); }
+  to   { box-shadow: 0 0 0 6px transparent; }
+}
+@media (prefers-reduced-motion: reduce) { .option.correct { animation: none; } }
+```
+
+### 23.3 Pulso de la mecha en los últimos 3 s
+Esta iteración **reintroduce a propósito** el pulso que §13.1 había recortado ("sin pulso por
+defecto"): el roadmap B.2 lo pide explícito. Se mantiene mínimo.
+
+- Cuando `.countdownFuse.isWarn`, el relleno `> i` late en **opacidad** `1 → 0.5 → 1` a ~1 Hz
+  (`fusePulse var(--dur-pulse) var(--ease-standard) infinite`) — un latido por segundo restante,
+  **sincronizado** con el tic sonoro y con el dígito rojo. Solo el relleno late (3px); nada de glow que
+  se derrame por el borde. El color rojo (§13.1) sigue siendo la señal principal; el pulso es el matiz.
+- **Reduced-motion**: **sin pulso**. Queda la salida ya definida en §13.3 — mecha roja estática + la
+  **lectura numérica permanente** (10→0). El rojo basta como urgencia.
+
+```css
+.countdownFuse.isWarn > i { animation: fusePulse var(--dur-pulse) var(--ease-standard) infinite; }
+@keyframes fusePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) { .countdownFuse.isWarn > i { animation: none; } }
+```
+
+### 23.4 Barrido de brillo de latón sobre el banner "¡Nuevo récord!"
+El único gesto "fanfarria" visual. Sobre el `.scorePanel.isRecord` (§15, que ya *prende* a latón: borde
++ hoist + cifra + settle), un **destello de latón** cruza el panel **una sola vez**, como luz que
+resbala sobre metal pulido. **No confeti.**
+
+- Mecanismo: pseudo-elemento `::after` con el gradiente **`--brass-sweep`** (§25: banda cálida con
+  núcleo casi-blanco, definida en tokens) que **traslada** de izquierda a derecha y sale de cuadro.
+- Timing: `brassSweep var(--dur-sheen) var(--ease-standard) 160ms 1 both` — arranca **tras** el settle
+  del panel (delay 160 ms), dura 900 ms, `both` lo deja fuera de cuadro al final (invisible, sin
+  limpieza). El panel gana `overflow: hidden` en el estado récord para recortar el destello a sus
+  esquinas (`--radius-md`); el hoist va por dentro, no le afecta.
+- **Reduced-motion**: **sin barrido**. La celebración queda en el estado estático del §15 (borde/hoist/
+  cifra en latón) — que ya es "de marca". El **sonido de récord sí suena** (audio ≠ motion, §20.3).
+
+```css
+.scorePanel.isRecord { overflow: hidden; }              /* recorta el destello a las esquinas */
+.scorePanel.isRecord::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: var(--brass-sweep);
+  transform: translateX(-120%);
+  animation: brassSweep var(--dur-sheen) var(--ease-standard) 160ms 1 both;
+}
+@keyframes brassSweep { to { transform: translateX(120%); } }
+@media (prefers-reduced-motion: reduce) { .scorePanel.isRecord::after { animation: none; content: none; } }
+```
+> `::after` va **sobre** el contenido (inset 0). Con el gradiente semitransparente el texto sigue
+> legible durante los 900 ms; si molestara, bajar la opacidad del núcleo del token `--c-brass-glint`.
+
+### 23.5 View Transitions entre pestañas Casual/Competitivo y rutas de Jugar
+Mejora progresiva: un **cross-fade corto** (nada de deslizamientos). react-router 6.30 no integra la
+View Transitions API, así que se envuelve la navegación en `document.startViewTransition`.
+
+- **Qué transiciona**: solo el **panel** (el contenido bajo las pestañas), no el masthead ni las
+  pestañas — así se siente un "cambio de carpeta", con la solapa fija y la hoja detrás cambiando. Se
+  nombra el contenedor del panel `view-transition-name: play-panel`; el resto queda en el grupo `root`
+  (sin animar, o con la misma duración corta). También aplica al salto `/` ⇄ `/competitivo` ⇄ `/jugar`
+  (arranque y salida de partida): mismo cross-fade de `--dur-vt`.
+- **Cómo**: envolver las navegaciones en un helper —
+  `if (!reduceMotion && document.startViewTransition) document.startViewTransition(() => navigate(...))
+  else navigate(...)`. Para las pestañas (`NavLink`), interceptar el click con ese helper o un pequeño
+  wrapper; para `handleStart`/`handleExit` (imperativos), envolver el `navigate`.
+- **Fallback**: navegadores sin la API (Firefox, Safari viejo) → `navigate` normal = **corte seco
+  actual**. Sin dependencia de layout, cero regresión.
+- **Reduced-motion**: **saltar la transición** (comprobar `matchMedia('(prefers-reduced-motion:
+  reduce)')` y navegar directo). Además, defensa en CSS por si el navegador anima el `root` por defecto.
+
+```css
+::view-transition-old(play-panel), ::view-transition-new(play-panel) {
+  animation-duration: var(--dur-vt); animation-timing-function: var(--ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none; }
+}
+```
+
+## 24. Siluetas de mapa
+
+SVGs normalizados (viewBox cuadrado, un path, `fill="currentColor"`; §B.3: zonas precacheadas ≤60 KB,
+países perezosos). **Técnica de teñido — `mask`, no `<img>`:** cargar la silueta como **máscara** de un
+`<span>` cuyo `background` es `currentColor`; así se tiñe con `color` (tinta o latón) usando el mismo
+asset, y el `fill` del archivo es irrelevante (la máscara usa el alfa del path). Patrón único en toda
+la app:
+```css
+.shape {
+  display: inline-block; flex: none;
+  width: var(--shape-md); height: var(--shape-md);
+  background: currentColor;
+  -webkit-mask: var(--src) center / contain no-repeat;
+          mask: var(--src) center / contain no-repeat;
+}
+/* --src lo fija el componente: style={{ '--src': `url(/shapes/zones/${id}.svg)` }} */
+```
+
+### 24.1 Filas del ledger competitivo (`CompetitivePanel`) — **sí**
+18 siluetas de zona, **precacheadas**. Es el mejor sitio: filas grandes (44px), single-select,
+enmarcado "libro de registro".
+
+- **Colocación**: dentro de la celda `.zone`, **antes** del label (tras el hoist tick). `.zone` pasa a
+  `display: inline-flex; align-items: center; gap: var(--space-2)`.
+- **Tamaño**: `--shape-md` (**20px**) — casa con la altura de x del label (`--text-base`) y no aprieta
+  los 44px de fila.
+- **Tinta**: reposo `--c-ink-3` (la "tinta al 60-70%" del roadmap); **fila seleccionada** `--c-accent`
+  (latón) — hereda el lenguaje del hoist que "prende". `Mundo` (insignia): silueta en `--c-ink-2` en
+  reposo (un punto más presente), latón al seleccionar.
+- **Alineación**: la silueta y el nombre comparten baseline óptico vía `align-items: center`; la columna
+  numérica (`Preguntas`/`Récord`) no se toca. La cabecera de columnas y `min-height` no cambian.
+
+```css
+.zone { display: inline-flex; align-items: center; gap: var(--space-2); }
+.zoneShape { width: var(--shape-md); height: var(--shape-md); background: currentColor;
+  -webkit-mask: var(--src) center/contain no-repeat; mask: var(--src) center/contain no-repeat;
+  color: var(--c-ink-3); }
+.row.isWorld .zoneShape { color: var(--c-ink-2); }
+.row:has(:checked) .zoneShape { color: var(--c-accent); }
+```
+
+### 24.2 Chips del casual (`CategoryMultiPicker`, 17 chips) — **NO por defecto** (tratamiento mínimo documentado)
+El usuario avisó que aquí puede saturar. **Decisión: se recortan — chips solo-texto (como hoy).**
+
+- **Criterio (concreto y verificable):** mantener siluetas en los chips **solo si** a 360px se cumplen
+  las dos cosas: (a) al añadir ~18px por chip el `flex-wrap` **no** gana filas frente al actual, y (b)
+  las siluetas se **reconocen** a 14–16px. Con 17 chips y 10 de ellos **sectores** (uniones parciales
+  que a 16px son manchas indistintas), **ninguna** de las dos se cumple: más ancho, peor wrap y blobs
+  sin valor de reconocimiento. → **Cortar.** El valor de la silueta se cobra donde sí luce: ledger
+  (grande, dossier) y ficha de Explorar (grande).
+- **Tratamiento mínimo (solo si se reactivan tras un playtest):** siluetas **solo en los 7 chips de
+  continente** (formas reconocibles, pocas), **ninguna en los 10 de sector**, a `--shape-sm` (16px),
+  `--c-ink-2` (selección hereda `--c-accent-ink` vía `currentColor`), `margin-right: var(--space-1)`
+  dentro del chip. Los 10 sectores quedan solo-texto **siempre**. Es el techo; por defecto, ni eso.
+
+### 24.3 Explorar — ficha (`CountryDetailPage`) **sí**; lista (`CountryCard`) **no** (presupuesto)
+Las siluetas **de país** (194) son perezosas y **no van al precache** (B.3, prioridad del usuario:
+solo se descargan las visitadas).
+
+- **Ficha del país — sí.** Al abrir `/explorar/{code}` se carga **una** silueta (respeta el presupuesto:
+  lazy, cache-first). Va en la **cabecera**, a la izquierda del nombre: el `<header>` pasa a
+  `display: flex; align-items: center; gap: var(--space-3)`; silueta a `--shape-lg` (**32px**),
+  `--c-ink-2`. Lee como "contorno del espécimen + su nombre" — muy guía de campo, sin competir con la
+  bandera `lg` (que aporta el color). Alineada al centro óptico del bloque nombre/oficial.
+- **Lista — no.** 194 tarjetas usando siluetas de país **descargarían casi todo el set de una** al
+  abrir Explorar, **rompiendo** el presupuesto B.3 (que es "solo las visitadas"). Por eso la lista se
+  queda como hoy (bandera + nombre + `ISO · continente`). **Reconciliación con "ficha/lista" del
+  roadmap:** el nivel-lista de Explorar puede llevar siluetas **de continente** (7, ya precacheadas,
+  reconocibles) en el `ContinentPicker` — **opcional**, mismo tratamiento mínimo que §24.2 (16px,
+  `--c-ink-2`, solo los 7). Así hay silueta en el "nivel lista" sin descargar 194 assets. Es un ajuste
+  deliberado del roadmap por el presupuesto que el propio roadmap fijó.
+
+```css
+/* CountryDetailPage.module.css */
+.header { display: flex; align-items: center; gap: var(--space-3); }
+.headerShape { width: var(--shape-lg); height: var(--shape-lg); background: currentColor;
+  -webkit-mask: var(--src) center/contain no-repeat; mask: var(--src) center/contain no-repeat;
+  color: var(--c-ink-2); }
+```
+> La silueta de la ficha es **decorativa** (`aria-hidden="true"`): el nombre ya está en el `<h1>`. Los
+> países (perezosos) quedan en la caché de runtime del SW (cache-first); las zonas (24.1) en el
+> precache.
+
+## 25. Tokens, copys y componentes afectados (resumen)
+
+### 25.1 Tokens añadidos a `tokens.css` (§ Iteración B)
+| Token | Valor (light) | Uso |
+|-------|---------------|-----|
+| `--c-brass-glint` | `rgba(255,240,214,0.85)` | núcleo del destello de récord (§23.4) |
+| `--c-brass-sheen` | `rgba(214,164,96,0.50)` | banda de latón del destello (§23.4) |
+| `--brass-sweep` | `linear-gradient(105deg, …)` | gradiente del barrido (usa los dos anteriores) |
+| `--glow-correct` | `rgba(46,125,91,0.45)` | anillo de confirmación del acierto (§23.2) |
+| `--dur-pulse` | `900ms` | latido de la mecha en warn (§23.3) |
+| `--dur-sheen` | `900ms` | barrido de latón del récord (§23.4) |
+| `--dur-vt` | `180ms` | cross-fade de View Transitions (§23.5) |
+| `--shape-sm` | `16px` | silueta chip/meta (reservado; chips OFF por defecto, §24.2) |
+| `--shape-md` | `20px` | silueta de fila del ledger (§24.1) |
+| `--shape-lg` | `32px` | silueta de la ficha de Explorar (§24.3) |
+
+Dark: `--c-brass-glint`/`--c-brass-sheen`/`--glow-correct` tienen override (latón/verde claros del
+dark). El resto es neutro al tema. **El sonido no añade tokens CSS** (WAVs + `sound.ts`). Todo lo demás
+reutiliza tokens existentes (`--c-accent`, `--c-accent-ink`, `--c-ink-2/3`, `--c-error`, `--ease-spring`,
+`--dur`, escala mono).
+
+### 25.2 Constantes / assets no-CSS (para frontend-engineer)
+- `public/sounds/{acierto,racha,fallo,timeout,tick,record}.wav` — generados por `scripts/gen-sounds.mjs`
+  (§21). Precacheados por la PWA (añadir `wav` al glob de Workbox si no está).
+- `src/lib/sound.ts` — módulo de audio (§22.1). Clave localStorage **`banderas:sound`** (ON por defecto).
+- Racha en vivo: derivada de `state.answers` (§22.3), sin tocar el reducer.
+
+### 25.3 Copys nuevos (español, sentence case)
+| Lugar | Copy |
+|-------|------|
+| Toggle de sonido · `aria-label` | **"Sonido"** (+ `aria-pressed`) |
+| Toggle de sonido · `title` (ON) | **"Silenciar sonido"** |
+| Toggle de sonido · `title` (silenciado) | **"Activar sonido"** |
+| Chip de racha (`GameTopBar`) | **"×{mult}"** (p. ej. "×1.3"; visible con mult > 1.0) |
+
+### 25.4 Componentes afectados (hand-off; se especifican aquí, no se tocan)
+- `src/lib/sound.ts` (**nuevo**) + `scripts/gen-sounds.mjs` (**nuevo**) + `public/sounds/*.wav`.
+- `AppHeader` — toggle de mute global (§22.4).
+- `GameTopBar` — toggle de mute en el canto derecho + **chip de racha** con `streakPop` (§22.4, §23.1).
+- `QuestionCountdown` — dispara `tick` (§22.2) + `fusePulse` en warn (§23.3).
+- `GamePage` — efecto que dispara `acierto`/`racha`/`fallo`/`timeout` y calcula la racha en vivo
+  (§22.2–22.3); envuelve `handleStart`/`handleExit` en la View Transition (§23.5).
+- Componentes de opción (`FlagToNameQuestion`/`NameToFlagQuestion`) y `TypeNameQuestion` — `correctFlash`
+  (§23.2).
+- `ResultPage` / `.module.css` — barrido de latón `brassSweep` + `record` sonoro (§23.4, §22.2).
+- `CompetitivePanel` / `.module.css` — silueta de zona por fila (§24.1).
+- `CategoryMultiPicker` — **sin cambios** (chips solo-texto, §24.2).
+- `CountryDetailPage` / `.module.css` — silueta del país en la cabecera (§24.3); `ContinentPicker`
+  opcional con siluetas de continente.
+- `PlayPage` / `PlayPage.module.css` — `view-transition-name: play-panel` en el contenedor del panel
+  + intercepción de las pestañas para la View Transition (§23.5).

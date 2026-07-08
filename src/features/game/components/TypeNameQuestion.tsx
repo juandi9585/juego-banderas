@@ -44,19 +44,28 @@ export function TypeNameQuestion({ question, answered, onAnswer, promptRef }: Pr
           if (!answered && value.trim().length > 0) onAnswer(value);
         }}
       >
-        <input
-          className={`${styles.input} ${inputStateClass}`}
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Escribe el país…"
-          aria-label="Nombre del país"
-          aria-describedby="type-help"
-          autoComplete="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          disabled={answered != null}
-        />
+        <div className={styles.inputWrap}>
+          <input
+            className={`${styles.input} ${inputStateClass}`}
+            type="text"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Escribe el país…"
+            aria-label="Nombre del país"
+            aria-describedby="type-help"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            disabled={answered != null}
+          />
+          {/* Confirmación del acierto (§23.2): ✓ que aparece con fade (el borde
+              verde y el anillo correctFlash los pone el CSS del input). */}
+          {answered?.correct && (
+            <span className={styles.inputCheck} aria-hidden="true">
+              ✓
+            </span>
+          )}
+        </div>
         <p id="type-help" className={styles.help}>
           No importan tildes ni mayúsculas
         </p>

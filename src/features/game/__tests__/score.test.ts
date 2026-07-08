@@ -4,6 +4,9 @@ import {
   speedBonus,
   timeLimitFor,
   graceFor,
+  streakMultiplier,
+  streakAt,
+  correctSoundFor,
   SCORE_SPEED_BONUS_MAX,
   SCORE_GRACE_MS,
   SCORE_TIME_LIMIT_MS,
@@ -185,6 +188,52 @@ describe('computeScore — multiplicador de racha (§4.1)', () => {
       ]),
     );
     expect(s.maxStreak).toBe(3);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Racha en vivo + hito (§22.3, Iteración B). Funciones PURAS derivadas de
+// state.answers (el reducer no lleva la racha en vivo): alimentan el chip de
+// racha y el sonido acierto-vs-hito, en lockstep con el multiplicador.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('racha en vivo y sonido de hito (§22.3)', () => {
+  const A = (correct: boolean): AnswerRecord => ({
+    questionId: 'q',
+    correct,
+    correctCode: 'xx',
+  });
+  const run = (n: number) => Array.from({ length: n }, () => A(true));
+
+  it('streakMultiplier: 0 y 1 → 1.0, +0.1 por acierto, topa en 1.5', () => {
+    expect(streakMultiplier(0)).toBe(1);
+    expect(streakMultiplier(1)).toBe(1);
+    expect(streakMultiplier(2)).toBeCloseTo(1.1, 5);
+    expect(streakMultiplier(3)).toBeCloseTo(1.2, 5);
+    expect(streakMultiplier(6)).toBeCloseTo(1.5, 5);
+    expect(streakMultiplier(7)).toBe(1.5); // topado desde la 6.ª subida
+    expect(streakMultiplier(20)).toBe(1.5);
+  });
+
+  it('streakAt cuenta aciertos consecutivos hasta el índice; fallos y huecos cortan', () => {
+    const answers = [A(true), A(true), A(false), A(true)];
+    expect(streakAt(answers, 0)).toBe(1);
+    expect(streakAt(answers, 1)).toBe(2);
+    expect(streakAt(answers, 2)).toBe(0); // el fallo corta
+    expect(streakAt(answers, 3)).toBe(1); // reinicia tras el fallo
+    // Un hueco genuino del array corta igual que un fallo.
+    const sparse: Array<AnswerRecord | undefined> = [A(true)];
+    sparse[2] = A(true);
+    expect(streakAt(sparse, 2)).toBe(1);
+  });
+
+  it('correctSoundFor: hito en racha 2..6, acierto en racha 1 y ≥ 7', () => {
+    expect(correctSoundFor(run(1), 0)).toBe('acierto'); // primer acierto
+    expect(correctSoundFor(run(2), 1)).toBe('racha'); // sube a ×1.1
+    expect(correctSoundFor(run(6), 5)).toBe('racha'); // sube a ×1.5
+    expect(correctSoundFor(run(7), 6)).toBe('acierto'); // ya topado (no sube)
+    // Tras un fallo, el siguiente acierto vuelve a ser 'acierto' (racha 1).
+    const mixed = [A(true), A(true), A(false), A(true)];
+    expect(correctSoundFor(mixed, 3)).toBe('acierto');
   });
 });
 

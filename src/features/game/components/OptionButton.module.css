@@ -45,7 +45,9 @@
   background: var(--c-success-tint);
   border: 2px solid var(--c-success);
   color: var(--c-success-ink);
-  animation: settle var(--dur) var(--ease-spring);
+  /* Settle de escala (§7) + anillo verde que florece y se apaga (§23.2). */
+  animation: settle var(--dur) var(--ease-spring),
+    correctFlash var(--dur) var(--ease-out);
 }
 
 .correct .icon {
@@ -98,6 +100,16 @@
   }
   75% {
     transform: translateX(-3px);
+  }
+}
+
+/* Bloom de confirmación: un pulso de luz verde hacia afuera, no un parpadeo. */
+@keyframes correctFlash {
+  from {
+    box-shadow: 0 0 0 0 var(--glow-correct);
+  }
+  to {
+    box-shadow: 0 0 0 6px transparent;
   }
 }
 

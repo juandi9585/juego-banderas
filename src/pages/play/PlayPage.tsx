@@ -42,16 +42,22 @@ export function PlayPage({ tab }: { tab: PlayTab }) {
         </div>
       </header>
 
+      {/* viewTransition (§23.5): react-router 6.30 lo envuelve en
+          document.startViewTransition (con fallback si no hay soporte). Solo el
+          panel cross-fadea (view-transition-name: play-panel); reduced-motion lo
+          neutraliza vía CSS. */}
       <nav className={styles.tabs} aria-label="Tipo de partida">
-        <NavLink to="/" end className={tabClass}>
+        <NavLink to="/" end className={tabClass} viewTransition>
           Casual
         </NavLink>
-        <NavLink to="/competitivo" className={tabClass}>
+        <NavLink to="/competitivo" className={tabClass} viewTransition>
           Competitivo
         </NavLink>
       </nav>
 
-      {tab === 'casual' ? <CasualPanel /> : <CompetitivePanel />}
+      <div className={styles.panelSlot}>
+        {tab === 'casual' ? <CasualPanel /> : <CompetitivePanel />}
+      </div>
     </div>
   );
 }

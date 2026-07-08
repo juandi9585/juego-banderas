@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { SCORE_TIME_WARN_MS } from '../score';
+import { play } from '../../../lib/sound';
 import styles from './GameTopBar.module.css';
 
 interface Props {
@@ -34,14 +35,26 @@ export function QuestionCountdown({ startedAt, limitMs, paused, onTimeout }: Pro
   const [announce, setAnnounce] = useState('');
   const firedRef = useRef(false); // timeout una sola vez
   const announcedRef = useRef(false); // aviso "quedan 3 s" una sola vez
+  // Último entero de segundos visto: para disparar el tic SOLO al bajar dentro de
+  // la ventana warn (t=3,2,1), una vez por segundo (§22.2). Se inicializa al alto
+  // para no tickear al montar.
+  const lastSecondsRef = useRef(Math.ceil(remainingFrom(startedAt, limitMs) / 1000));
 
   useEffect(() => {
-    // Pregunta ya respondida (por clic o por expiración): no corre el reloj.
+    // Pregunta ya respondida (por clic o por expiración): no corre el reloj (y por
+    // tanto no suena el tic mientras la hoja está abierta, §22.2).
     if (paused) return;
 
     function tick() {
       const r = remainingFrom(startedAt, limitMs);
       setRemaining(r);
+      // Tic de urgencia: al cruzar cada segundo entero dentro de la ventana warn
+      // (3 → 2 → 1). El sonido es independiente del mute-motion (audio ≠ motion).
+      const secs = Math.ceil(r / 1000);
+      if (secs < lastSecondsRef.current && secs >= 1 && secs <= SCORE_TIME_WARN_MS / 1000) {
+        play('tick');
+      }
+      lastSecondsRef.current = secs;
       if (r <= SCORE_TIME_WARN_MS && !announcedRef.current) {
         announcedRef.current = true;
         setAnnounce('Quedan 3 segundos.'); // aviso one-shot para lectores (§13.4)

@@ -3,7 +3,7 @@
 // Estilo Kahoot: la velocidad da puntos reales, con multiplicador de racha.
 // Hoy alimenta SOLO el panel informativo del casual (ResultPage). El competitivo
 // (countdown de 10 s, timeouts, récords) reutilizará esta misma función tal cual.
-import type { GameResult, RoundMode } from './types';
+import type { AnswerRecord, GameResult, RoundMode } from './types';
 
 // ── Constantes (§4.1). Exportadas para tests y UI. ───────────────────────────
 export const SCORE_BASE = 100; // puntos base por acierto
@@ -35,6 +35,52 @@ export function timeLimitFor(mode: RoundMode): number {
 /** Ventana de gracia (bonus pleno) según el modo de ronda: 3 s escrito, 2 s resto. */
 export function graceFor(mode: RoundMode): number {
   return mode === 'type-name' ? SCORE_GRACE_TYPED_MS : SCORE_GRACE_MS;
+}
+
+/**
+ * Multiplicador de racha: `min(1 + 0.1·(racha − 1), 1.5)`, con suelo en 1.0 para
+ * racha ≤ 1 (0 y 1 → 1.0). Es la fórmula que usa `computeScore` para puntuar y la
+ * que deriva el hito de racha (§22.3), de una sola fuente para que nunca discrepen.
+ */
+export function streakMultiplier(streak: number): number {
+  return Math.min(
+    1 + SCORE_STREAK_STEP * Math.max(0, streak - 1),
+    SCORE_STREAK_MAX_MULT,
+  );
+}
+
+/**
+ * Racha de aciertos consecutivos que TERMINA en el índice `upTo` (inclusive),
+ * contando hacia atrás sobre `answers`. 0 si esa respuesta no existe o es fallo.
+ * Los huecos (undefined) cortan la racha, igual que un fallo (coherente con
+ * `computeScore`).
+ */
+export function streakAt(
+  answers: readonly (AnswerRecord | undefined)[],
+  upTo: number,
+): number {
+  let streak = 0;
+  for (let i = upTo; i >= 0; i--) {
+    const a = answers[i];
+    if (a && a.correct) streak += 1;
+    else break;
+  }
+  return streak;
+}
+
+/**
+ * Sonido de un acierto recién registrado en `index` (§22.3): `'racha'` cuando el
+ * multiplicador SUBE respecto a la respuesta anterior (racha 2..6), `'acierto'`
+ * en racha 1 o con el multiplicador ya topado (racha ≥ 7). Función PURA derivada
+ * de `state.answers`, sin tocar el reducer. El caller solo la usa en aciertos.
+ */
+export function correctSoundFor(
+  answers: readonly (AnswerRecord | undefined)[],
+  index: number,
+): 'acierto' | 'racha' {
+  const streak = streakAt(answers, index);
+  const rose = streakMultiplier(streak) > streakMultiplier(streak - 1);
+  return rose ? 'racha' : 'acierto';
 }
 
 export interface Score {
@@ -106,10 +152,7 @@ export function computeScore(result: GameResult): Score {
     if (answer && answer.correct) {
       streak += 1;
       correct += 1;
-      const mult = Math.min(
-        1 + SCORE_STREAK_STEP * (streak - 1),
-        SCORE_STREAK_MAX_MULT,
-      );
+      const mult = streakMultiplier(streak);
       points += Math.round((SCORE_BASE + speedBonus(answer.elapsedMs, mode)) * mult);
       if (streak > maxStreak) maxStreak = streak;
     } else {

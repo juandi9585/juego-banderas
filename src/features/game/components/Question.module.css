@@ -57,6 +57,11 @@
   gap: var(--space-3);
 }
 
+/* Contenedor del input: ancla del ✓ de confirmación (§23.2). */
+.inputWrap {
+  position: relative;
+}
+
 .input {
   width: 100%;
   height: 56px;
@@ -83,11 +88,46 @@
 .inputCorrect:disabled {
   border: 2px solid var(--c-success);
   color: var(--c-success-ink);
+  padding-right: var(--space-10); /* deja sitio al ✓ */
+}
+
+/* Anillo verde de confirmación alrededor del campo (§23.2), como en la opción. */
+.inputCorrect {
+  animation: correctFlash var(--dur) var(--ease-out);
 }
 
 .inputIncorrect:disabled {
   border: 2px solid var(--c-error);
   color: var(--c-error-ink);
+}
+
+/* ✓ que aparece con fade a la derecha del campo al acertar. */
+.inputCheck {
+  position: absolute;
+  right: var(--space-4);
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--c-success);
+  font-weight: var(--weight-bold);
+  animation: checkFade var(--dur) var(--ease-out);
+}
+
+@keyframes correctFlash {
+  from {
+    box-shadow: 0 0 0 0 var(--glow-correct);
+  }
+  to {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+@keyframes checkFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .help {
@@ -109,6 +149,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .question {
+    animation: none;
+  }
+  /* Sin anillo ni fade (§23.2): el borde verde + el ✓ estáticos son la confirmación. */
+  .inputCorrect,
+  .inputCheck {
     animation: none;
   }
 }

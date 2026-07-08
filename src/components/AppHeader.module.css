@@ -27,7 +27,13 @@
 
 .nav {
   display: flex;
+  align-items: center;
   gap: var(--space-1);
+}
+
+/* Toggle de sonido tras "Explorar": alinea al borde óptico derecho del header. */
+.sound {
+  margin-right: calc(var(--space-2) * -1);
 }
 
 .link {

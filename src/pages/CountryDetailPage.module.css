@@ -18,6 +18,23 @@
   color: var(--c-ink);
 }
 
+/* Cabecera de la ficha (§24.3): silueta del país + bloque nombre/oficial. */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.headerShape {
+  flex: none;
+  width: var(--shape-lg);
+  height: var(--shape-lg);
+  background: currentColor;
+  color: var(--c-ink-2);
+  -webkit-mask: var(--shape-src) center / contain no-repeat;
+  mask: var(--shape-src) center / contain no-repeat;
+}
+
 .name {
   font-size: var(--text-2xl);
   font-weight: var(--weight-display);

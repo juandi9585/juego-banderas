@@ -1,0 +1,32 @@
+/* Toggle de sonido (§22.4): icono 24px dentro de un objetivo táctil de 44px.
+   Monocromo — chrome, no semántico: ON en Pizarra, silenciado atenuado. */
+.toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border-radius: var(--radius-md);
+  color: var(--c-ink-2);
+  transition: color var(--dur-fast) var(--ease-standard),
+    background-color var(--dur-fast) var(--ease-standard);
+}
+
+.toggle:hover {
+  color: var(--c-ink);
+  background: var(--c-surface-2);
+}
+
+.muted {
+  color: var(--c-ink-3);
+}
+
+.muted:hover {
+  color: var(--c-ink-2);
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+}

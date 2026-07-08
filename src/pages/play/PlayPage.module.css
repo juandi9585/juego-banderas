@@ -99,3 +99,27 @@
   border-radius: 0 0 2px 2px;
   background: var(--c-accent);
 }
+
+/* ── View Transitions entre pestañas (§23.5) ──────────────────────────────────
+   Solo el PANEL cross-fadea (la carpeta detrás cambia con la solapa fija). El
+   nombre debe estar SIEMPRE presente para que se capturen ambas instantáneas. */
+.panelSlot {
+  view-transition-name: play-panel;
+}
+
+/* Pseudo-elementos globales (el argumento play-panel no lo hashea CSS Modules,
+   pero :global lo deja explícito y a salvo). Cross-fade corto de --dur-vt. */
+:global(::view-transition-old(play-panel)),
+:global(::view-transition-new(play-panel)) {
+  animation-duration: var(--dur-vt);
+  animation-timing-function: var(--ease-standard);
+}
+
+/* Defensa reduced-motion: el navegador no anima ninguna transición de vista. */
+@media (prefers-reduced-motion: reduce) {
+  :global(::view-transition-group(*)),
+  :global(::view-transition-old(*)),
+  :global(::view-transition-new(*)) {
+    animation: none;
+  }
+}

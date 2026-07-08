@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Cache de descargas de Natural Earth (scripts/generate-shapes.mjs)
+scripts/.cache/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -50,7 +50,9 @@ export function CasualPanel() {
     const questionCount =
       countPreset === 'all' ? Number.MAX_SAFE_INTEGER : countPreset;
     startGame({ mode, categories, questionCount });
-    navigate('/jugar');
+    // Cross-fade del panel al arrancar la partida (§23.5); corte seco si no hay
+    // soporte o reduced-motion (el CSS salta la animación).
+    navigate('/jugar', { viewTransition: true });
   }
 
   return (

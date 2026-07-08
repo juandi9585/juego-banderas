@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "validate": "node scripts/validate-data.mjs",
+    "shapes": "node scripts/generate-shapes.mjs",
+    "sounds": "node scripts/generate-sounds.mjs",
     "build": "npm run validate && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

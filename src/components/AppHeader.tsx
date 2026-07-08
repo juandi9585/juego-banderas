@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import { SoundToggle } from './SoundToggle';
 import styles from './AppHeader.module.css';
 
 export function AppHeader() {
@@ -27,6 +28,9 @@ export function AppHeader() {
           >
             Explorar
           </NavLink>
+          {/* Preferencia global de sonido (§22.4); durante la partida vive en la
+              GameTopBar porque este header se oculta en /jugar. */}
+          <SoundToggle className={styles.sound} />
         </nav>
       </div>
     </header>

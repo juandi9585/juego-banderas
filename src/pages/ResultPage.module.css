@@ -78,6 +78,25 @@
   border-color: var(--c-accent);
   padding-left: calc(var(--space-4) + var(--hoist-width));
   animation: recordSettle var(--dur) var(--ease-spring);
+  overflow: hidden; /* recorta el barrido de latón a las esquinas del panel */
+}
+
+/* Barrido de brillo de latón ONE-SHOT (§23.4): luz que resbala sobre metal
+   pulido. Arranca tras el settle (delay 160 ms) y sale de cuadro. No confeti. */
+.scorePanel.isRecord::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--brass-sweep);
+  transform: translateX(-120%);
+  animation: brassSweep var(--dur-sheen) var(--ease-standard) 160ms 1 both;
+}
+
+@keyframes brassSweep {
+  to {
+    transform: translateX(120%);
+  }
 }
 
 .scorePanel.isRecord::before {
@@ -127,6 +146,12 @@
 @media (prefers-reduced-motion: reduce) {
   .scorePanel.isRecord {
     animation: none;
+  }
+  /* Sin barrido (§23.4): queda el estado estático en latón (borde/hoist/cifra),
+     que ya es de marca. El sonido de récord SÍ suena (audio ≠ motion). */
+  .scorePanel.isRecord::after {
+    animation: none;
+    content: none;
   }
 }
 

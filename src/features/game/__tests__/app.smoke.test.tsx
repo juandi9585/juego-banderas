@@ -37,7 +37,7 @@ describe('App (smoke)', () => {
     const main = screen.getByRole('main');
     const options = within(main)
       .getAllByRole('button')
-      .filter((b) => b.getAttribute('aria-label') !== 'Salir del juego');
+      .filter((b) => !['Salir del juego', 'Sonido'].includes(b.getAttribute('aria-label') ?? ''));
     expect(options).toHaveLength(4);
 
     // Responder la primera opción: sube la hoja modal con la nota de campo.

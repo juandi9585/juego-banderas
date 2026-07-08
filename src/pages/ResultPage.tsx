@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useGame } from '../features/game/useGame';
 import { computeScore } from '../features/game/score';
 import { useRecords } from '../features/records/useRecords';
+import { play } from '../lib/sound';
 import type { RecordEntry } from '../features/records/records';
 import { FlagImage } from '../components/FlagImage';
 import { Button } from '../components/Button';
@@ -60,6 +61,9 @@ export function ResultPage() {
     };
     const isNew = records.submit(categoryId, mode, entry);
     setRecordResult({ isNew, prev });
+    // Único momento "fanfarria" sonora (§22.2): suena una vez al lograr récord.
+    // Va dentro de la guarda submittedRef → no se duplica con StrictMode.
+    if (isNew) play('record');
   }, [result, isCompetitive, score, records]);
 
   if (!result || !score) {
@@ -145,7 +149,7 @@ export function ResultPage() {
         <Button
           onClick={() => {
             restart();
-            navigate('/jugar');
+            navigate('/jugar', { viewTransition: true });
           }}
         >
           Jugar otra vez
@@ -156,7 +160,7 @@ export function ResultPage() {
             reset();
             // Vuelve a la pestaña de la que salió la partida (casual o
             // competitivo) dentro del módulo Jugar.
-            navigate(isCompetitive ? '/competitivo' : '/');
+            navigate(isCompetitive ? '/competitivo' : '/', { viewTransition: true });
           }}
         >
           Cambiar modo

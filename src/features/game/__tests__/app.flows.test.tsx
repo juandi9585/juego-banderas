@@ -67,7 +67,7 @@ describe('Modo bandera → nombre (ronda completa)', () => {
       const main = screen.getByRole('main');
       const options = within(main)
         .getAllByRole('button')
-        .filter((b) => b.getAttribute('aria-label') !== 'Salir del juego');
+        .filter((b) => !['Salir del juego', 'Sonido'].includes(b.getAttribute('aria-label') ?? ''));
       expect(options).toHaveLength(4);
       // La opción correcta SIEMPRE está entre las 4.
       expect(options.some((b) => b.textContent === correctName)).toBe(true);
@@ -141,12 +141,12 @@ describe('Modo nombre → bandera', () => {
     imgs.forEach((img) => expect(img.getAttribute('alt')).toBe(''));
 
     // Los 4 botones llevan aria-label con el nombre del país (accesibilidad).
-    // Se excluye el botón "Salir del juego" de la barra superior.
+    // Se excluyen los controles de chrome de la barra superior (salir, sonido).
     const optionButtons = within(main)
       .getAllByRole('button')
       .filter((b) => {
         const label = b.getAttribute('aria-label');
-        return label && label !== 'Salir del juego';
+        return label && label !== 'Salir del juego' && label !== 'Sonido';
       });
     expect(optionButtons).toHaveLength(4);
 
@@ -240,7 +240,7 @@ describe('Hoja nota de campo (bottom sheet)', () => {
     const main = screen.getByRole('main');
     const options = within(main)
       .getAllByRole('button')
-      .filter((b) => b.getAttribute('aria-label') !== 'Salir del juego');
+      .filter((b) => !['Salir del juego', 'Sonido'].includes(b.getAttribute('aria-label') ?? ''));
     await user.click(options[0]);
     return screen.getByRole('dialog');
   }
@@ -362,7 +362,7 @@ describe('Selector de categorías (Home)', () => {
       const main = screen.getByRole('main');
       const options = within(main)
         .getAllByRole('button')
-        .filter((b) => b.getAttribute('aria-label') !== 'Salir del juego');
+        .filter((b) => !['Salir del juego', 'Sonido'].includes(b.getAttribute('aria-label') ?? ''));
       expect(options).toHaveLength(4);
       const correct = options.find((b) => b.textContent === country.name)!;
       await user.click(correct);
@@ -454,7 +454,7 @@ describe('Modo competitivo (récords locales)', () => {
     const main = screen.getByRole('main');
     return within(main)
       .getAllByRole('button')
-      .filter((b) => b.getAttribute('aria-label') !== 'Salir del juego');
+      .filter((b) => !['Salir del juego', 'Sonido'].includes(b.getAttribute('aria-label') ?? ''));
   }
 
   /** Modo de la pregunta actual, detectado por su prompt (mixto alterna ambos). */
@@ -698,7 +698,7 @@ describe('Casual: aislamiento del competitivo (sin countdown ni récords)', () =
       const main = screen.getByRole('main');
       const options = within(main)
         .getAllByRole('button')
-        .filter((b) => b.getAttribute('aria-label') !== 'Salir del juego');
+        .filter((b) => !['Salir del juego', 'Sonido'].includes(b.getAttribute('aria-label') ?? ''));
       await user.click(options[0]);
       await user.click(
         screen.getByRole('button', {

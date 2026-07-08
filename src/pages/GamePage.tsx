@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useGame } from '../features/game/useGame';
-import { timeLimitFor } from '../features/game/score';
+import {
+  correctSoundFor,
+  streakAt,
+  streakMultiplier,
+  timeLimitFor,
+} from '../features/game/score';
+import { play } from '../lib/sound';
 import { GameTopBar } from '../features/game/components/GameTopBar';
 import { FlagToNameQuestion } from '../features/game/components/FlagToNameQuestion';
 import { NameToFlagQuestion } from '../features/game/components/NameToFlagQuestion';
@@ -34,6 +40,24 @@ export function GamePage() {
     }
   }, [questionId]);
 
+  // Sonido de respuesta (§22.2): al APARECER una respuesta nueva. La lógica de
+  // acierto-vs-hito se deriva de state.answers (§22.3), nunca del reducer (puro).
+  // Guarda de ref contra el doble efecto de StrictMode (una reproducción por
+  // respuesta); se reinicia al avanzar (currentAnswer null).
+  const lastSoundKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (!currentAnswer) {
+      lastSoundKey.current = null;
+      return;
+    }
+    const key = questionId ?? '';
+    if (lastSoundKey.current === key) return;
+    lastSoundKey.current = key;
+    if (currentAnswer.timedOut) play('timeout');
+    else if (!currentAnswer.correct) play('fallo');
+    else play(correctSoundFor(state.answers, state.currentIndex));
+  }, [currentAnswer, questionId, state.answers, state.currentIndex]);
+
   // Guardas: en idle vuelve al inicio; al terminar redirige al resultado.
   if (state.status === 'idle') {
     return <Navigate to="/" replace />;
@@ -52,6 +76,13 @@ export function GamePage() {
   // remonta por pregunta (questionKey) reiniciándose.
   const isCompetitive = state.config?.competitive != null;
 
+  // Multiplicador de racha EN VIVO para el chip (§23.1). Con la hoja abierta
+  // refleja la respuesta recién dada; ya avanzada, la racha arrastrada. Derivado
+  // de state.answers, sin tocar el reducer.
+  const answeredIdx = sheetOpen ? state.currentIndex : state.currentIndex - 1;
+  const mult =
+    answeredIdx >= 0 ? streakMultiplier(streakAt(state.answers, answeredIdx)) : 1;
+
   function handleNext() {
     if (!isLast) focusNextPrompt.current = true;
     next();
@@ -59,7 +90,9 @@ export function GamePage() {
 
   function handleExit() {
     reset();
-    navigate('/');
+    // Cross-fade del panel al salir de la partida (§23.5); corte seco si el
+    // navegador no soporta View Transitions o hay reduced-motion (CSS lo salta).
+    navigate('/', { viewTransition: true });
   }
 
   return (
@@ -75,6 +108,7 @@ export function GamePage() {
           current={progress.current}
           total={progress.total}
           onExit={handleExit}
+          mult={mult}
           countdown={
             isCompetitive && state.config != null && state.questionStartedAt != null
               ? {

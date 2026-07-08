@@ -44,10 +44,21 @@ online, para que el esquema de la base de datos y el switch del leaderboard nazc
 
 ---
 
-## B. "Juice" de UX: animación, sonido y siluetas — recomendado 2.º
+## B. "Juice" de UX: animación, sonido y siluetas — recomendado 2.º · **[IMPLEMENTADO 2026-07-07]**
 
 Darle sensación de juego sin romper la sobriedad de la guía de campo. Tres piezas independientes
 (se pueden hacer en cualquier orden interno o en paralelo).
+
+> **Estado:** en rama `dev`. Spec de diseño en design.md §20–§25. B.1: 6 WAVs sintetizados por
+> `scripts/generate-sounds.mjs` (55 KB, afinados a La 440; el hito de racha sustituye al acierto
+> cuando sube el multiplicador), módulo `src/lib/sound.ts` + toggle de mute en AppHeader y
+> GameTopBar. B.2: pop de racha, halo de acierto, pulso de mecha en warn, barrido de latón en el
+> banner de récord y View Transitions del panel Jugar — todo con salida en reduced-motion.
+> B.3: `scripts/generate-shapes.mjs` (Natural Earth 110m + 50m) → 18 zonas precacheadas (24 KB)
+> y 194 países fuera del precache con caché de runtime; integradas en el ledger competitivo y la
+> ficha de Explorar. **Recortes de la spec (§24.2):** chips del casual SIN silueta (a 16 px son
+> manchas) y lista de Explorar sin silueta (rompería el presupuesto de datos); revisitables si el
+> playtest lo pide.
 
 ### B.1 Sonido — **[DECIDIDO] ON por defecto + mute persistente**
 - **Assets locales pequeños** (ogg/mp3, ~2-6 KB cada uno, presupuesto total **≤ 60 KB**,

@@ -10,9 +10,28 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon.svg'],
-      // Precachear el shell, los datos y TODAS las banderas (SVG diminutos) => offline garantizado.
+      // Precachear el shell, los datos, las banderas, las siluetas de ZONA y los
+      // sonidos (wav) => offline garantizado. Las 194 siluetas de PAÍS quedan
+      // FUERA del precache (decisión dura del usuario, roadmap §B.3): se sirven
+      // perezosas con runtimeCaching CacheFirst — el usuario solo descarga las que
+      // visita en Explorar, una vez.
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,wav}'],
+        globIgnores: ['**/shapes/countries/**'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/shapes/countries/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'shapes-countries',
+              expiration: {
+                maxEntries: 210, // 194 países + holgura
+                maxAgeSeconds: 60 * 60 * 24 * 180, // 180 días
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
       manifest: {
         name: 'Banderas del Mundo',

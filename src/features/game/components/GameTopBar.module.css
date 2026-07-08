@@ -33,6 +33,40 @@
   min-width: 0;
 }
 
+/* Chip de racha (§23.1): texto mono sobrio (no una pastilla), en latón. Slot
+   RESERVADO (min-width fijo) para que aparecer/desaparecer no reflote la fila. */
+.streak {
+  flex: none;
+  min-width: 3.2ch;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-accent-ink);
+}
+
+/* El valor se remonta con key={mult} al subir → el pop se relanza (mismo
+   "asentado" de latón que el acierto). Sin brillo extra: el color ya lo dice. */
+.streakValue {
+  display: inline-block;
+  animation: streakPop var(--dur) var(--ease-spring);
+}
+
+@keyframes streakPop {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.18);
+  }
+}
+
+/* Toggle de sonido en el canto derecho: alinea al borde óptico como el ✕. */
+.sound {
+  margin-right: calc(var(--space-2) * -1);
+}
+
 /* ── Countdown competitivo (§13). Solo se monta en rondas competitivas. ──────
    Dos instrumentos distintos: la regla de progreso (posición en la ronda,
    crece, latón) y la mecha (tiempo de la pregunta, se consume, fría→roja). */
@@ -89,6 +123,19 @@
    y llega solo al final (sin rojo ni parpadeo durante los 7 s tranquilos). */
 .countdownFuse.isWarn > i {
   background: var(--c-error);
+  /* Pulso sutil de opacidad ~1 Hz (§23.3): un latido por segundo restante,
+     sincronizado con el tic y el dígito rojo. Solo late el relleno (3px). */
+  animation: fusePulse var(--dur-pulse) var(--ease-standard) infinite;
+}
+
+@keyframes fusePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Reduced motion (§13.3): sin drenado suave (manda la lectura numérica, que
@@ -96,6 +143,14 @@
 @media (prefers-reduced-motion: reduce) {
   .countdownFuse > i {
     transition: none;
+  }
+  /* Sin pulso de la mecha (§23.3): manda el rojo estático + la lectura numérica. */
+  .countdownFuse.isWarn > i {
+    animation: none;
+  }
+  /* Sin pop del chip de racha (§23.1): el cambio de cifra en latón es la señal. */
+  .streakValue {
+    animation: none;
   }
   .countdownGlyph {
     display: none;

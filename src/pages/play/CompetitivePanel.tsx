@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../features/game/useGame';
 import { useRecords } from '../../features/records/useRecords';
@@ -75,13 +75,16 @@ export function CompetitivePanel() {
       questionCount: MAX_QUESTIONS, // el motor recorta al pool → min(20, pool)
       competitive: { seed: randomSeed() },
     });
-    navigate('/jugar');
+    // Cross-fade del panel al arrancar la partida (§23.5); corte seco si no hay
+    // soporte o reduced-motion (el CSS salta la animación).
+    navigate('/jugar', { viewTransition: true });
   }
 
   function ledgerRow(cat: (typeof GAME_CATEGORIES)[number]) {
     const best = getBest(cat.id, mode);
+    const rowClass = cat.id === 'mundo' ? `${styles.row} ${styles.isWorld}` : styles.row;
     return (
-      <label key={cat.id} className={styles.row}>
+      <label key={cat.id} className={rowClass}>
         <input
           type="radio"
           name="zona"
@@ -90,7 +93,16 @@ export function CompetitivePanel() {
           checked={selected === cat.id}
           onChange={() => setSelected(cat.id)}
         />
-        <span className={styles.zone}>{cat.label}</span>
+        <span className={styles.zone}>
+          {/* Silueta de zona (§24.1): teñida por CSS (mask + currentColor); en la
+              fila elegida "prende" a latón como el hoist. Decorativa. */}
+          <span
+            className={styles.zoneShape}
+            style={{ '--shape-src': `url(/shapes/zones/${cat.id}.svg)` } as CSSProperties}
+            aria-hidden="true"
+          />
+          {cat.label}
+        </span>
         <span className={styles.cellQ}>{questionsFor(cat.id)}</span>
         {best ? (
           <span className={styles.cellRecord}>
