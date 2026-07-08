@@ -57,6 +57,8 @@ export function CasualPanel() {
 
   return (
     <section className={styles.panel} aria-label="Configura la ronda">
+      {/* Orden calcado del competitivo (§26.4.1): controles cortos arriba, el
+          índice largo de zonas abajo, y "Empezar" en una barra sticky. */}
       <div className={styles.field}>
         <p className={styles.fieldLabel}>Modo de juego</p>
         <SegmentedControl
@@ -69,11 +71,6 @@ export function CasualPanel() {
       </div>
 
       <div className={styles.field}>
-        <p className={styles.fieldLabel}>Categorías</p>
-        <CategoryMultiPicker value={categories} onChange={setCategories} />
-      </div>
-
-      <div className={styles.field}>
         <p className={styles.fieldLabel}>Preguntas</p>
         <SegmentedControl
           label="Número de preguntas"
@@ -83,12 +80,21 @@ export function CasualPanel() {
             setCountPreset(v === 'all' ? 'all' : (Number(v) as QuestionCountPreset))
           }
         />
-        <p className={styles.hint}>
-          {poolSize} {poolSize === 1 ? 'país disponible' : 'países disponibles'}
-        </p>
       </div>
 
-      <Button onClick={handleStart}>Empezar</Button>
+      <div className={styles.field}>
+        <p className={styles.fieldLabel}>Categorías</p>
+        <CategoryMultiPicker value={categories} onChange={setCategories} />
+      </div>
+
+      {/* Barra sticky (§26.4.5): "Empezar" siempre a mano + el pool vivo como
+          resumen de la unión de categorías. */}
+      <div className={styles.startBar}>
+        <Button onClick={handleStart}>Empezar</Button>
+        <p className={styles.startHint}>
+          {poolSize} {poolSize === 1 ? 'país en juego' : 'países en juego'}
+        </p>
+      </div>
     </section>
   );
 }

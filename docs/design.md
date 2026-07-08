@@ -1478,3 +1478,422 @@ reutiliza tokens existentes (`--c-accent`, `--c-accent-ink`, `--c-ink-2/3`, `--c
   opcional con siluetas de continente.
 - `PlayPage` / `PlayPage.module.css` — `view-transition-name: play-panel` en el contenedor del panel
   + intercepción de las pestañas para la View Transition (§23.5).
+
+---
+
+# Iteración C — El módulo Jugar que se SIENTE (sliders, ledger de especímenes)
+
+> Origen: feedback directo del usuario sobre la Iteración B — *"no aplicó casi animaciones ni cambios
+> visuales"* en la pantalla de configuración. B fue tímido en el chrome de Jugar. C tiene que **sentirse**
+> sin romper la sobriedad de la guía de campo (**latón, no confeti**, la regla no cambia). Propiedad de
+> ui-designer: este doc + `tokens.css`. Implementa frontend-engineer con esta spec; **cero** cambios de
+> paleta o tipografía, un solo bloque de tokens nuevos (§26.7, "Iteración C"). Numeración continúa tras §25.
+
+## 26. Módulo Jugar: dirección de la iteración
+
+Tres cambios duros, un solo hilo conductor: **el papel se vuelve mecanismo.** Donde B dejó controles que
+sólo cambiaban de color, C introduce **un latón que se desliza** — un thumb físico que viaja entre
+opciones. El mismo gesto une las tres piezas: el `SegmentedControl` gana un thumb slider (§26.2), las
+pestañas de carpeta dejan que el hoist de latón **resbale** de una a otra (§26.3), y el casual abandona
+el formulario plano para convertirse en un **índice de especímenes** — un ledger multi-select con las
+siluetas de zona a 20px, hermano del libro de registro competitivo (§26.4). La consigna de Chanel se
+respeta: **todo el movimiento nuevo es el mismo latón tenue deslizándose**, ningún color ni efecto extra;
+el "brillo" fuerte sigue reservado al récord (§23.4). El casual pasa de "3 campos apilados sin alma" a
+"rellenar una hoja de expedición en el cuaderno de campo".
+
+**Por qué NO es un default de IA:** ningún slider material-design con thumb blanco elevado ni pastillas
+de colores; el thumb es **latón tenue sobre carta**, se mide por índice con `calc` (no una librería), y el
+selector de categorías es un **ledger de especímenes con siluetas de contorno** — un artefacto del tema
+(guía de campo), no un multiselect genérico de chips.
+
+### 26.1 Principios de C (léelos antes de tocar nada)
+1. **Un solo gesto nuevo: deslizar.** Thumb del segmented, hoist de pestaña y "prender" del tick son
+   variaciones del **mismo latón que se mueve**. No se inventa un segundo lenguaje de motion.
+2. **Semántica intacta, forma nueva.** El multi-select casual conserva TODO (§26.4.4): unión de
+   categorías, `[]` = todas, `canonicalCategories`, "Todos" = 'mundo' oculto, marcar todas colapsa a `[]`.
+   Cambia el **cuerpo** (chips → filas de ledger), nunca las reglas.
+3. **Compactar donde se pueda.** El casual crece por las filas grandes que el usuario pidió; se compensa
+   con **Sectores plegado por defecto** (§26.4.3) y **CTA sticky** (§26.4.5), de modo que "Empezar"
+   siempre está a mano y el alto por defecto queda cerca del actual.
+4. **Salida digna en `prefers-reduced-motion` para CADA animación** (§26.6). Sin excepción: el reset de
+   `tokens.css` ya neutraliza duraciones; además cada pieza degrada a **cambio de estado instantáneo**
+   (el color/tinte/latón porta la señal, no el movimiento).
+5. **Móvil 360–414 primero, AA, foco visible, targets 44px.** El thumb va *detrás* del texto; el foco
+   sigue siendo el `outline` del botón/casilla.
+
+## 26.2 `SegmentedControl` → slider con thumb deslizante (fila **y** columna)
+
+El usuario lo describió literal: *"inputs que son sliders"*. Hoy el segmento activo hace un cambio seco de
+`background`. C sustituye ese background por **una sola pieza `.thumb`** que se **desliza** hasta la opción
+elegida. Un único componente compartido cubre `direction="row"` (Preguntas casual, Mixto|Escrito
+competitivo) y `direction="column"` (Modo casual).
+
+**Técnica — thumb medido por índice con `calc`, sin JS de medición** (elección deliberada frente al
+thumb medido por `ResizeObserver`: los segmentos son **todos del mismo tamaño** —`flex: 1 1 0`—, así que
+el índice basta y evitamos un observer). React fija dos custom properties en el contenedor; el CSS calcula
+tamaño y desplazamiento:
+
+- En el `<div class="group">`: `style={{ '--seg-count': options.length, '--seg-index': activeIndex }}`,
+  con `activeIndex = options.findIndex(o => o.value === value)`.
+- El `.thumb` se dimensiona a **un segmento** y se **traslada** por `índice × (tamaño propio + gap)`.
+  Como `translateX/Y` en `%` se resuelve contra el **tamaño propio del thumb** (= un segmento), la
+  zancada exacta es `100% + gap`. El `%` de `width`/`height` se resuelve contra la **caja de padding**
+  del contenedor (bloque contenedor de un absoluto), de ahí el `− (N+1)·gap` (2 de padding + (N−1) huecos,
+  todos `--space-1`).
+
+```css
+/* SegmentedControl.module.css */
+.group {
+  position: relative;               /* bloque contenedor del thumb */
+  isolation: isolate;               /* thumb bajo el texto sin z-index global */
+  display: flex;
+  gap: var(--space-1);
+  background: var(--c-surface);
+  border: var(--border-thin) solid var(--c-border);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1);
+}
+.column { flex-direction: column; border-radius: var(--radius-lg); }
+
+/* El carril del slider: una sola pieza de latón tenue, tamaño de UN segmento. */
+.thumb {
+  position: absolute;
+  z-index: 0;                        /* detrás de los botones */
+  pointer-events: none;
+  top: var(--space-1);
+  bottom: var(--space-1);            /* alto = fila menos padding (fila) */
+  left: var(--space-1);
+  width: calc((100% - (var(--seg-count) + 1) * var(--space-1)) / var(--seg-count));
+  transform: translateX(calc(var(--seg-index) * (100% + var(--space-1))));
+  background: var(--c-accent-tint);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-thumb);
+  transition: transform var(--dur-slide) var(--ease-out);
+}
+/* Columna: mismo truco, eje Y. */
+.column .thumb {
+  right: var(--space-1);
+  bottom: auto;
+  width: auto;
+  height: calc((100% - (var(--seg-count) + 1) * var(--space-1)) / var(--seg-count));
+  transform: translateY(calc(var(--seg-index) * (100% + var(--space-1))));
+  border-radius: var(--radius-md);
+}
+
+/* Segmentos: SIN background propio (lo pone el thumb); sólo color/peso + su
+   transición corta. Van sobre el thumb. */
+.segment {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex; align-items: center; justify-content: center;
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--c-ink-2);
+  background: none;                  /* ← antes lo tenía .selected */
+  transition: color var(--dur-fast) var(--ease-standard);
+}
+.column .segment {
+  border-radius: var(--radius-md);
+  justify-content: flex-start;
+  padding-inline: var(--space-4);
+  font-size: var(--text-base);
+  white-space: nowrap;               /* columna asume 1 línea (los labels caben) */
+}
+.segment:hover { color: var(--c-ink); }
+.selected { color: var(--c-accent-ink); font-weight: var(--weight-semibold); }
+```
+
+**Markup** (un solo `.thumb` como primer hijo, `aria-hidden`):
+```tsx
+<div role="group" aria-label={label}
+     className={direction === 'column' ? `${styles.group} ${styles.column}` : styles.group}
+     style={{ '--seg-count': options.length, '--seg-index': activeIndex } as CSSProperties}>
+  <span className={styles.thumb} aria-hidden="true" />
+  {options.map(opt => (
+    <button key={opt.value} type="button" aria-pressed={opt.value === value}
+            className={opt.value === value ? `${styles.segment} ${styles.selected}` : styles.segment}
+            onClick={() => onChange(opt.value)}>
+      {opt.label}
+    </button>
+  ))}
+</div>
+```
+
+**Decisiones y notas:**
+- **Easing `--ease-out`, NO `--ease-spring`.** El thumb llena un segmento; un spring con rebote se saldría
+  visiblemente del carril y leería como roto. `--ease-out` (decelera) es el "slider confiado". Duración
+  `--dur-slide` (220 ms): suficiente para LEER el trayecto, no lento.
+- **Sin salto en el montaje.** Una transición CSS no anima en el primer render (no hay valor previo): el
+  thumb aparece ya en su índice inicial y sólo se desliza al **cambiar** el valor. No hace falta flag de
+  "montado".
+- **`aria-pressed` intacto** (accesibilidad idéntica a hoy). El thumb es decorativo (`aria-hidden`).
+- **Supuesto:** segmentos uniformes (`flex: 1 1 0`, columna a 1 línea). Todos los usos actuales lo
+  cumplen (Modo: 3 labels ≤18 car.; Preguntas: `10 · 20 · Todas`; Mixto|Escrito: 2 cortos).
+- **`prefers-reduced-motion`:** el reset global pone `transition-duration: 0` → el thumb **salta** al
+  segmento elegido. El thumb sigue mostrando la selección (fondo + `--c-accent-ink` en el texto). Digno.
+
+## 26.3 Pestañas de carpeta: el hoist de latón **se desliza** (`PlayPage`)
+
+Hoy sólo transiciona el color de la pestaña; el hoist de latón es un `::before` estático de la activa. C lo
+convierte en **una sola barra de latón que resbala** de la pestaña Casual a la Competitivo (y viceversa),
+como una lengüeta de expediente que se corre. Mismo gesto que el thumb del §26.2 → coherencia total.
+
+**Técnica — barra única deslizada por índice + morph de View Transition:**
+- `PlayPage` fija `style={{ '--tab-index': tab === 'casual' ? 0 : 1 }}` en el contenedor `.tabs`.
+- Se renderiza **una** `.tabHoist` (span `aria-hidden`) dentro de `.tabs`; se dimensiona a **una pestaña
+  menos el inset de 12px por lado** y se posiciona con `left` calculado por índice (el `%` de `left` se
+  resuelve contra el ancho de `.tabs`, su bloque contenedor).
+- **Dos caminos de animación que no chocan** (uno por navegador):
+  - **Con View Transitions API** (Chromium): la barra lleva `view-transition-name: play-tab-hoist`; el VT
+    que ya envuelve la navegación de pestañas (§23.5, `NavLink viewTransition`) **morphea** su caja
+    old→new = un **deslizamiento** independiente del cross-fade del panel. Se le da su propia duración.
+  - **Sin VT** (Firefox / Safari viejo): `navigate` normal, **la instancia de `PlayPage` persiste**
+    (ambas rutas `/` y `/competitivo` renderizan `<PlayPage>` en la misma posición del árbol → React
+    reconcilia y reutiliza; sólo cambia `--tab-index`), así que la **transición CSS de `left`** anima el
+    deslizamiento. ⚠️ **No añadir `key={tab}` a `PlayPage`**: forzaría remount y mataría este fallback.
+
+```css
+/* PlayPage.module.css */
+.tabs {
+  position: relative;                /* bloque contenedor del hoist */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+.tabHoist {
+  position: absolute;
+  top: 0;                            /* sobre la línea superior de la tira */
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  background: var(--c-accent);
+  pointer-events: none;
+  /* ancho = una pestaña − 24px (inset 12px/lado); left = 12 + i·(pestaña + gap). */
+  width: calc((100% - var(--space-2)) / 2 - 24px);
+  left: calc(12px + var(--tab-index) * ((100% - var(--space-2)) / 2 + var(--space-2)));
+  view-transition-name: play-tab-hoist;
+  transition: left var(--dur-slide) var(--ease-out);   /* fallback sin VT */
+}
+/* Duración del morph del hoist en navegadores con VT (independiente del panel). */
+:global(::view-transition-group(play-tab-hoist)) {
+  animation-duration: var(--dur-slide);
+  animation-timing-function: var(--ease-out);
+}
+```
+
+**Se elimina** `.tabActive::before` (el hoist estático). El resto del estado de la pestaña activa se
+queda: color `--c-ink`, peso semibold, y el borde inferior transparente que "abre hacia el panel" (una
+transición de color, no de forma). El nombre de las pestañas ("Casual"/"Competitivo") sigue capturándose
+en el grupo `root` del VT (cambio de color imperceptible durante el cross-fade); no necesita nombre propio.
+
+**`prefers-reduced-motion`:** el guard global de §23.5 (`::view-transition-group(*) { animation: none }`)
+anula el morph; el reset global anula la transición de `left`. El hoist **salta** a la pestaña activa. La
+posición del latón sigue marcando la pestaña. Digno.
+
+## 26.4 Casual → "Índice de especímenes" (`CasualPanel` + `CategoryMultiPicker`)
+
+El casual deja de ser un formulario plano y adopta el **mundo del ledger**: mismo chasis de card con
+hairlines que el competitivo (§19.4), pero **multi-select** y con las **siluetas de zona a 20px** que el
+usuario pidió. Es el cambio grande de C.
+
+### 26.4.1 Reordenar el panel (compactar sin perder nada)
+Orden nuevo del `CasualPanel`, calcado del competitivo (control corto arriba, artefacto largo abajo, CTA
+sticky): **Modo → Preguntas → Categorías (el índice) → barra sticky "Empezar"**. Motivo: los dos controles
+cortos (segmented) quedan siempre visibles arriba; el índice largo de zonas es lo que se recorre; y
+"Empezar" no queda enterrado tras la lista — va en una **barra sticky** (misma que `CompetitivePanel`
+`.startBar`). El hint del pool (`N países`) se muda a esa barra como resumen vivo de la unión.
+
+```
+Modo de juego          ┌─ [ Bandera → nombre ]────────┐   ← SegmentedControl COLUMNA (slider)
+                       │   Nombre → bandera            │
+                       └───────────────────────────────┘
+Preguntas              [ 10 ][ 20 ][ Todas ]               ← SegmentedControl FILA (slider)
+Categorías             ┌──────────────────────────────┐
+                       │ ▍◐ Todos                      │   ← "Todos" = 'mundo' (insignia), silueta mundo
+                       │─ CONTINENTES ─────────────────│
+                       │ ▍◔ África                      │   ← fila multi-select · silueta 20px · tick "prende"
+                       │ ▍◔ América                     │
+                       │ …                              │
+                       │─ SECTORES ·  2 activas    ▸ ───│   ← disclosure (plegado por defecto; badge si hay activas)
+                       └──────────────────────────────┘
+[ ══════════ Empezar ══════════ ]  195 países en juego     ← barra sticky (gradiente de papel + safe-area)
+```
+
+### 26.4.2 La fila de especímen (multi-select)
+`CategoryMultiPicker` abandona los chips (deja de importar `ContinentPicker.module.css`) y renderiza el
+**mismo ledger** del competitivo, con dos diferencias: (a) **casilla, no radio** (multi-select), (b) **sin
+columnas numéricas** — la fila casual es más ligera que el libro de registro: sólo `tick · silueta · label`.
+Esto además la diferencia del competitivo (que sí lleva `Preguntas`/`Récord`): mismo mundo, documento
+distinto.
+
+- **Chasis**: card `--radius-lg`, `border --c-border`, `shadow-sm`, `overflow: hidden`, hairline entre
+  todos los hijos (`.ledger > * + *`). Idéntico a §19.4.
+- **Fila** (`<label>` que envuelve un `<input type="checkbox">` oculto pero focusable):
+  `position: relative; display: flex; align-items: center; min-height: 44px; padding: var(--space-2)
+  var(--space-4)`. La `.zone` (silueta + label) es un `inline-flex; gap: var(--space-2)`.
+- **Tick de hoist = indicador de casilla**: `::before` idéntico al competitivo (4×18px, inset, neutro en
+  reposo). Al marcar: latón + crece a 26px + la fila se tinta `--c-accent-tint` — pero con **micro-tacto
+  de "prender"** (§26.5). Varias filas pueden estar encendidas a la vez (multi-select).
+- **Silueta de zona** (§24.1, misma técnica `mask` + `--shape-src`): `--shape-md` (**20px**), reposo
+  `--c-ink-3`; fila marcada → `--c-accent` (latón, hereda el "prende" del tick). Assets ya precacheados
+  (18 zonas, 24 KB) → **coste de datos 0**. Decorativa (`aria-hidden`): el nombre va en el label.
+- **"Todos"** = primera fila del card, tratamiento insignia (como el `Mundo` competitivo): silueta
+  `mundo.svg` en `--c-ink-2` en reposo, latón cuando `isAll`. Su casilla refleja `isAll`
+  (`value.length === 0`). Sin badge ni número.
+- **Bandas de grupo** `Continentes` / `Sectores`: `--c-surface-2`, mono 2xs (idénticas a §19.4).
+
+```css
+/* CategoryMultiPicker.module.css (nuevo cuerpo; espeja CompetitivePanel.module.css) */
+.ledger { background: var(--c-surface); border: var(--border-thin) solid var(--c-border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+.ledger > * + * { border-top: var(--border-thin) solid var(--c-border); }
+
+.row { position: relative; display: flex; align-items: center; min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-4); cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out); }
+.check { position: absolute; width: 1px; height: 1px; opacity: 0; }  /* input type=checkbox, focusable */
+
+.row::before {                                   /* tick = indicador de casilla */
+  content: ''; position: absolute; left: 0; top: 50%; translate: 0 -50%;
+  width: var(--hoist-width); height: 18px; border-radius: 0 2px 2px 0;
+  background: var(--c-border-strong);
+  transition: background-color var(--dur-fast) var(--ease-spring),
+              height var(--dur-fast) var(--ease-spring); }        /* "prende" con tacto */
+.row:has(:checked) { background: var(--c-accent-tint); }
+.row:has(:checked)::before { background: var(--c-accent); height: 26px; }
+.row:has(:focus-visible) { box-shadow: inset 0 0 0 2px var(--c-focus); }
+
+.zone { display: inline-flex; align-items: center; gap: var(--space-2);
+  font-family: var(--font-display); font-size: var(--text-base);
+  font-weight: var(--weight-medium); line-height: var(--leading-snug); }
+.row:has(:checked) .zone { font-weight: var(--weight-semibold); }
+
+.zoneShape { flex: none; width: var(--shape-md); height: var(--shape-md);
+  background: currentColor; color: var(--c-ink-3);
+  -webkit-mask: var(--shape-src) center/contain no-repeat;
+          mask: var(--shape-src) center/contain no-repeat;
+  transition: color var(--dur-fast) var(--ease-out); }
+.row.isWorld .zoneShape { color: var(--c-ink-2); }
+.row:has(:checked) .zoneShape { color: var(--c-accent); }
+```
+
+### 26.4.3 Sectores plegable (la compactación)
+Los **10 sectores** viven bajo un disclosure **plegado por defecto**; los 7 continentes + "Todos" quedan
+siempre visibles. Así el alto por defecto del índice vuelve cerca del actual (≈ hoy) en vez de disparar a
+~880px con las 20 filas abiertas. Es, además, otro momento con motion deliberado (el usuario pidió sentir).
+
+- La cabecera "Sectores" es un `<button aria-expanded aria-controls="sectores-panel">` dentro del card
+  (misma piel que `.groupHead`), con un **chevron** a la derecha que rota 90° al abrir.
+- **Auto-abrir si hay sectores activos al montar**: `useState(() => value.some(id => esSector(id)))` — una
+  selección nunca nace oculta.
+- **Badge de activos** cuando está plegado y hay ≥1 sector marcado: `· {n} activa(s)` en la cabecera
+  (singular con n=1), mono `--c-accent-ink`. Superficie la selección escondida sin abrir.
+- **Contenido plegado `inert`** (hallazgo del review): el panel colapsado lleva `inert` — sus casillas
+  salen del orden de tabulación y del árbol de accesibilidad, cumpliendo la promesa de
+  `aria-expanded=false` sin sacar el contenido del DOM (la transición 0fr↔1fr lo necesita).
+- **Colapso animable con `grid-template-rows` 1fr↔0fr** (transicionable, sin medir alturas):
+
+```css
+.collapsible { display: grid; grid-template-rows: 1fr;
+  transition: grid-template-rows var(--dur-slow) var(--ease-standard); }
+.collapsible.isCollapsed { grid-template-rows: 0fr; }
+.collapsibleInner { overflow: hidden; }
+.collapsibleInner > * + * { border-top: var(--border-thin) solid var(--c-border); }
+.chevron { transition: transform var(--dur-fast) var(--ease-out); }
+[aria-expanded='true'] .chevron { transform: rotate(90deg); }
+```
+> El card padre da el hairline superior al `.collapsible` (vía `.ledger > * + *`); las filas internas se
+> separan con `.collapsibleInner > * + *`. `overflow: hidden` recorta durante el colapso.
+
+### 26.4.4 Semántica multi-select — **intacta** (verificación obligatoria)
+La FORMA cambió (chips → filas); las reglas NO. `CategoryMultiPicker` conserva su contrato exacto:
+| Regla | Cómo se cumple en el ledger |
+|-------|------------------------------|
+| Unión de categorías activas | `value` sigue siendo `CategoryId[]`; el motor filtra por unión (sin cambios) |
+| `[]` = todas | `isAll = value.length === 0`; enciende la fila "Todos" |
+| Emisión canónica | cada toggle → `onChange(canonicalCategories(next))` (idéntico a hoy) |
+| "Todos" = 'mundo' (oculto) | fila "Todos" al principio; clic con `!isAll` → `onChange([])`; 'mundo' no aparece como fila propia |
+| Marcar todas colapsa a `[]` | al marcar las 17, `canonicalCategories` devuelve `[]` → filas individuales se apagan y "Todos" se enciende (comportamiento actual; documentado, no es bug) |
+| a11y ≥ actual | `<input type="checkbox">` reales dentro de `<label>` (mejor que `aria-pressed`): grupo con `role="group" aria-label="Categorías"`, foco visible (anillo interior), target 44px (la fila entera) |
+
+### 26.4.5 Barra sticky "Empezar" (`CasualPanel`)
+Idéntica a `CompetitivePanel.startBar`: `position: sticky; bottom: 0`, a sangre
+(`margin-inline: calc(-1 * var(--space-4))`), gradiente de papel (`linear-gradient(to top, var(--c-bg)
+72%, transparent)`), `padding-bottom: max(var(--space-3), env(safe-area-inset-bottom))`. Contiene el
+`Button` "Empezar" + el helper vivo del pool: `{poolSize} países en juego` (mono `--text-xs`,
+`--c-ink-3`; el `poolSize` ya se calcula). Copys en sentence case.
+
+## 26.5 Micro-interacción de selección — el tick "prende"
+Ask 3c. Al marcar una fila (casual), el encendido debe SENTIRSE, no ser un cambio seco:
+- **El tick** pasa de neutro a latón y **crece 18→26px con `--ease-spring`** (§26.4.2): un pequeño "snap"
+  de encendido, no un fundido. El spring aquí es seguro (una barra de 4px que crece; no hay carril que
+  desbordar).
+- **La silueta** cruza de `--c-ink-3` a `--c-accent` con `--ease-out` (transición de `color`): el
+  contorno del espécimen "se enciende" en latón a la vez.
+- **La fila** tinta a `--c-accent-tint` con `--ease-out`. Los tres tiempos son ~`--dur-fast` (120 ms):
+  encendido nítido y simultáneo.
+- **Apagar** es la misma transición inversa (todo por `transition`, no `@keyframes`).
+- **`prefers-reduced-motion`:** el reset global pone las transiciones a 0 → el estado marcado (tinte +
+  tick latón 26px + silueta latón) aparece **instantáneo**. El latón **es** la señal.
+
+## 26.6 Tabla de disparo de animaciones (C) + salida en `prefers-reduced-motion`
+| # | Animación | Dónde | Disparador | Propiedad · token | Salida reduced-motion |
+|---|-----------|-------|-----------|-------------------|------------------------|
+| C1 | **Thumb slider** | `SegmentedControl` (fila y col.) | cambia `value` → `--seg-index` | `transform` · `--dur-slide` `--ease-out` | thumb **salta** al segmento (sigue mostrando selección) |
+| C2 | **Hoist de pestaña desliza** | `PlayPage .tabHoist` | cambia ruta `/`⇄`/competitivo` → `--tab-index` | VT morph `play-tab-hoist` **o** `left` · `--dur-slide` `--ease-out` | guard §23.5 + reset → **salta** a la pestaña |
+| C3 | **Tick "prende"** | fila del ledger casual | `:has(:checked)` | `height`+`background` · `--dur-fast` `--ease-spring` | estado marcado **instantáneo** (latón 26px) |
+| C4 | **Silueta se enciende** | `.zoneShape` casual | `:has(:checked)` | `color` · `--dur-fast` `--ease-out` | color latón **instantáneo** |
+| C5 | **Fila tinta** | `.row` casual | `:has(:checked)` | `background-color` · `--dur-fast` `--ease-out` | tinte **instantáneo** |
+| C6 | **Sectores despliega** | `.collapsible` | `aria-expanded` | `grid-template-rows` 0fr↔1fr · `--dur-slow` `--ease-standard` (+ chevron `--dur-fast`) | muestra/oculta **instantáneo** |
+
+Ejes independientes (§20.3): `prefers-reduced-motion` gobierna estas 6; el mute (audio) es ortogonal y no
+cambia en C. Ninguna anima `opacity`/`transform` bajo reduced-motion (usan `transition` que el reset pone
+a 0). Sin layout shift: el thumb y el hoist son absolutos; el índice de especímenes reserva su hueco.
+
+## 26.7 Tokens nuevos (bloque "Iteración C" en `tokens.css`)
+| Token | Valor (light) | Dark | Uso |
+|-------|---------------|------|-----|
+| `--dur-slide` | `220ms` | (neutro) | deslizamiento del thumb (§26.2) y del hoist de pestaña (§26.3) |
+| `--shadow-thumb` | `0 1px 1px rgba(18,41,63,.10), 0 2px 5px rgba(18,41,63,.08)` | `0 1px 2px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.30)` | eleva el thumb del carril como pieza física (§26.2) |
+
+Todo lo demás reutiliza tokens existentes: `--c-accent`/`--c-accent-tint`/`--c-accent-ink`/`--c-ink-2/3`,
+`--shape-md` (20px), `--ease-out`/`--ease-standard`/`--ease-spring`, `--dur-fast`/`--dur-slow`,
+`--radius-*`, `--hoist-width`, `--space-*`. **Cero** cambios de paleta o tipografía.
+
+## 26.8 Hand-off — componente por componente (markup + CSS + técnica; **no** se toca aquí)
+- **`SegmentedControl.tsx`** — añadir `<span class="thumb" aria-hidden>` como primer hijo; fijar
+  `--seg-count`/`--seg-index` (índice = `findIndex(value)`) en el `.group` vía `style`. `aria-pressed` y
+  API sin cambios. (§26.2)
+- **`SegmentedControl.module.css`** — `.group` a `position: relative; isolation: isolate`; añadir `.thumb`
+  (fila y `.column .thumb`) con los `calc` de tamaño/desplazamiento; quitar el `background` de `.selected`
+  (lo aporta el thumb), dejar color/peso; `.segment` a `position: relative; z-index: 1; flex: 1 1 0`.
+  (§26.2)
+- **`PlayPage.tsx`** — fijar `--tab-index` (0/1 según `tab`) en `.tabs`; renderizar `<span class="tabHoist"
+  aria-hidden>`. **No** poner `key={tab}` en `PlayPage` (rompería el fallback CSS). (§26.3)
+- **`PlayPage.module.css`** — `.tabs` a `position: relative`; añadir `.tabHoist` (width/left por índice,
+  `view-transition-name: play-tab-hoist`, transición de `left`); regla
+  `::view-transition-group(play-tab-hoist)`; **eliminar** `.tabActive::before`. (§26.3)
+- **`CasualPanel.tsx`** — reordenar a Modo → Preguntas → Categorías → barra sticky; mover el hint del pool
+  a la barra sticky (`{poolSize} países en juego`). Lógica de `startGame`/estado **sin cambios**. (§26.4.1,
+  §26.4.5)
+- **`CasualPanel.module.css`** — añadir `.startBar` (copiar de `CompetitivePanel.module.css`) + `.startHint`;
+  el `.panel` mantiene `display:grid; gap`. (§26.4.5)
+- **`CategoryMultiPicker.tsx`** — **reescribir el cuerpo** de chips a ledger: dejar de importar
+  `ContinentPicker.module.css`; fila = `<label>` con `<input type="checkbox">` oculto + `.zone`
+  (silueta `--shape-src=url(/shapes/zones/${id}.svg)` + label); fila "Todos" insignia (`isAll`); disclosure
+  de Sectores (`aria-expanded`, auto-abrir si hay sector activo, badge de activos). **Semántica intacta**
+  (§26.4.4): sigue emitiendo `canonicalCategories`. (§26.4)
+- **`CategoryMultiPicker.module.css`** — nuevo cuerpo tipo ledger (espeja `CompetitivePanel.module.css`:
+  `.ledger`, hairlines, `.row`, `.check`, `.row::before` tick con `--ease-spring`, `.zone`, `.zoneShape`,
+  `.groupHead`, `.isWorld`) + disclosure (`.collapsible`/`.collapsibleInner`/`.chevron`). Puede
+  extraerse un `ledger.module.css` compartido con el competitivo (opcional; si no, se duplica el chasis —
+  aceptable). (§26.4)
+- **`ContinentPicker` (Explorar)** — **sin cambios** (sigue con chips; ya no lo consume el casual). Anotar
+  que el acople `CategoryMultiPicker → ContinentPicker.module.css` desaparece.
+- **`CompetitivePanel`** — **sin cambios de C**; su `SegmentedControl` (Mixto|Escrito) hereda el thumb
+  slider automáticamente (mismo componente). Su ledger es la referencia que el casual espeja.
+- **`tokens.css`** — bloque "Iteración C": `--dur-slide`, `--shadow-thumb` (+ override dark). (§26.7)

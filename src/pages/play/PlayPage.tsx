@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { NavLink } from 'react-router-dom';
 import { countries, TOTAL_COUNTRIES } from '../../data/dataset';
 import { FlagImage } from '../../components/FlagImage';
@@ -46,7 +46,15 @@ export function PlayPage({ tab }: { tab: PlayTab }) {
           document.startViewTransition (con fallback si no hay soporte). Solo el
           panel cross-fadea (view-transition-name: play-panel); reduced-motion lo
           neutraliza vía CSS. */}
-      <nav className={styles.tabs} aria-label="Tipo de partida">
+      <nav
+        className={styles.tabs}
+        aria-label="Tipo de partida"
+        style={{ '--tab-index': tab === 'casual' ? 0 : 1 } as CSSProperties}
+      >
+        {/* Hoist de latón: una sola barra que RESBALA entre pestañas (§26.3). Con
+            View Transitions morphea (play-tab-hoist); sin ellas, la instancia de
+            PlayPage persiste y anima la transición CSS de `left`. Decorativa. */}
+        <span className={styles.tabHoist} aria-hidden="true" />
         <NavLink to="/" end className={tabClass} viewTransition>
           Casual
         </NavLink>

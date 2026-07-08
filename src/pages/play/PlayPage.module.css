@@ -56,9 +56,34 @@
    inactivas quedan sobre la línea base. El hoist NUNCA toca las esquinas
    redondeadas (lección del card del competitivo): va inset 12px por lado. */
 .tabs {
+  position: relative; /* bloque contenedor del hoist */
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
+}
+
+/* Hoist de latón deslizante (§26.3): una sola barra, dimensionada a una pestaña
+   menos el inset de 12px/lado y posicionada por índice con `left`. Dos caminos
+   que no chocan: morph de View Transition (Chromium) o transición de `left`
+   (fallback sin VT, la instancia de PlayPage persiste). */
+.tabHoist {
+  position: absolute;
+  top: 0; /* sobre la línea superior de la tira */
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  background: var(--c-accent);
+  pointer-events: none;
+  /* ancho = una pestaña − 24px (inset 12px/lado); left = 12 + i·(pestaña + gap). */
+  width: calc((100% - var(--space-2)) / 2 - 24px);
+  left: calc(12px + var(--tab-index) * ((100% - var(--space-2)) / 2 + var(--space-2)));
+  view-transition-name: play-tab-hoist;
+  transition: left var(--dur-slide) var(--ease-out); /* fallback sin VT */
+}
+
+/* Duración del morph del hoist en navegadores con VT (independiente del panel). */
+:global(::view-transition-group(play-tab-hoist)) {
+  animation-duration: var(--dur-slide);
+  animation-timing-function: var(--ease-out);
 }
 
 .tab {
@@ -87,17 +112,6 @@
   border-bottom-color: transparent;
   color: var(--c-ink);
   font-weight: var(--weight-semibold);
-}
-
-.tabActive::before {
-  content: '';
-  position: absolute;
-  top: -1px; /* sobre el propio borde */
-  left: 12px;
-  right: 12px;
-  height: 3px;
-  border-radius: 0 0 2px 2px;
-  background: var(--c-accent);
 }
 
 /* ── View Transitions entre pestañas (§23.5) ──────────────────────────────────

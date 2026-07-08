@@ -1,4 +1,9 @@
+/* Control segmentado con thumb slider (docs/design.md §26.2). El segmento activo
+   ya NO tiene fondo propio: lo aporta el `.thumb` de latón que se desliza por
+   índice. Cubre fila (`--radius-pill`) y columna (`--radius-lg`). */
 .group {
+  position: relative; /* bloque contenedor del thumb */
+  isolation: isolate; /* thumb bajo el texto sin z-index global */
   display: flex;
   gap: var(--space-1);
   background: var(--c-surface);
@@ -12,8 +17,42 @@
   border-radius: var(--radius-lg);
 }
 
+/* El carril del slider: una sola pieza de latón tenue, tamaño de UN segmento.
+   El % de translateX se resuelve contra el ancho propio (= un segmento), así que
+   la zancada exacta es 100% + gap; el % de width se resuelve contra la caja de
+   padding del contenedor, de ahí el − (N+1)·gap (2 de padding + N−1 huecos). */
+.thumb {
+  position: absolute;
+  z-index: 0; /* detrás de los botones */
+  pointer-events: none;
+  top: var(--space-1);
+  bottom: var(--space-1);
+  left: var(--space-1);
+  width: calc((100% - (var(--seg-count) + 1) * var(--space-1)) / var(--seg-count));
+  transform: translateX(calc(var(--seg-index) * (100% + var(--space-1))));
+  background: var(--c-accent-tint);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-thumb);
+  transition: transform var(--dur-slide) var(--ease-out);
+}
+
+/* Columna: mismo truco, eje Y. */
+.column .thumb {
+  right: var(--space-1);
+  bottom: auto;
+  width: auto;
+  height: calc((100% - (var(--seg-count) + 1) * var(--space-1)) / var(--seg-count));
+  transform: translateY(calc(var(--seg-index) * (100% + var(--space-1))));
+  border-radius: var(--radius-md);
+}
+
+/* Segmentos: SIN fondo propio (lo pone el thumb); solo color/peso. Van sobre el
+   thumb. */
 .segment {
-  flex: 1;
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,8 +62,8 @@
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   color: var(--c-ink-2);
-  transition: background-color var(--dur-fast) var(--ease-standard),
-    color var(--dur-fast) var(--ease-standard);
+  background: none;
+  transition: color var(--dur-fast) var(--ease-standard);
 }
 
 .column .segment {
@@ -32,6 +71,7 @@
   justify-content: flex-start;
   padding-inline: var(--space-4);
   font-size: var(--text-base);
+  white-space: nowrap; /* columna asume 1 línea (los labels caben) */
 }
 
 .segment:hover {
@@ -39,11 +79,6 @@
 }
 
 .selected {
-  background: var(--c-accent-tint);
   color: var(--c-accent-ink);
   font-weight: var(--weight-semibold);
-}
-
-.selected:hover {
-  color: var(--c-accent-ink);
 }

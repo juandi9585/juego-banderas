@@ -285,55 +285,61 @@ describe('Hoja nota de campo (bottom sheet)', () => {
 });
 
 describe('Selector de categorías (Home)', () => {
-  it('secuencia de aria-pressed y hints: Todos → Europa → +Oceanía → quitar → todas colapsa', async () => {
+  it('secuencia de casillas y hint: Todos → Europa → +Oceanía → quitar → todas colapsa', async () => {
     const user = userEvent.setup();
     render(<App />);
 
+    // El ledger multi-select (§26.4): las categorías son casillas dentro de
+    // labels, no chips. "Todos" también es casilla.
     const group = screen.getByRole('group', { name: 'Categorías' });
-    const chip = (name: string | RegExp) => within(group).getByRole('button', { name });
-    // Hint calculado desde el dataset importado (NO hardcodeado).
+    const box = (name: string | RegExp) =>
+      within(group).getByRole('checkbox', { name });
+    // Hint calculado desde el dataset importado (NO hardcodeado), en la barra
+    // sticky: "N países en juego".
     const hint = (ids: CategoryId[]) =>
-      `${filterByCategories(ids, countries).length} países disponibles`;
+      `${filterByCategories(ids, countries).length} países en juego`;
 
     // Inicial: "Todos" encendido y el pool completo.
-    expect(chip('Todos')).toHaveAttribute('aria-pressed', 'true');
+    expect(box('Todos')).toBeChecked();
     expect(screen.getByText(hint([]))).toBeInTheDocument();
 
     // Click "Europa": Europa on, Todos off, hint solo de Europa.
-    await user.click(chip(/^Europa$/));
-    expect(chip(/^Europa$/)).toHaveAttribute('aria-pressed', 'true');
-    expect(chip('Todos')).toHaveAttribute('aria-pressed', 'false');
+    await user.click(box(/^Europa$/));
+    expect(box(/^Europa$/)).toBeChecked();
+    expect(box('Todos')).not.toBeChecked();
     expect(screen.getByText(hint(['europa']))).toBeInTheDocument();
 
     // + "Oceanía": ambas on, hint = unión.
-    await user.click(chip(/^Oceanía$/));
-    expect(chip(/^Oceanía$/)).toHaveAttribute('aria-pressed', 'true');
-    expect(chip(/^Europa$/)).toHaveAttribute('aria-pressed', 'true');
+    await user.click(box(/^Oceanía$/));
+    expect(box(/^Oceanía$/)).toBeChecked();
+    expect(box(/^Europa$/)).toBeChecked();
     expect(screen.getByText(hint(['europa', 'oceania']))).toBeInTheDocument();
 
     // Des-clickear ambas: "Todos" se reenciende y vuelve el pool completo.
-    await user.click(chip(/^Europa$/));
-    await user.click(chip(/^Oceanía$/));
-    expect(chip('Todos')).toHaveAttribute('aria-pressed', 'true');
-    expect(chip(/^Europa$/)).toHaveAttribute('aria-pressed', 'false');
-    expect(chip(/^Oceanía$/)).toHaveAttribute('aria-pressed', 'false');
+    await user.click(box(/^Europa$/));
+    await user.click(box(/^Oceanía$/));
+    expect(box('Todos')).toBeChecked();
+    expect(box(/^Europa$/)).not.toBeChecked();
+    expect(box(/^Oceanía$/)).not.toBeChecked();
     expect(screen.getByText(hint([]))).toBeInTheDocument();
 
-    // Seleccionar TODAS las categorías visibles (las 17 menos 'mundo', que se
-    // oculta porque el chip "Todos" cumple su rol) colapsa a "Todos".
+    // Marcar TODAS las categorías visibles (las 17 menos 'mundo', que se oculta
+    // porque "Todos" cumple su rol) colapsa a "Todos". Los sectores viven bajo el
+    // disclosure: hay que ABRIRLO primero (comportamiento accesible real —
+    // aria-expanded=false por defecto — aunque jsdom los mantenga en el DOM).
+    await user.click(within(group).getByRole('button', { name: /Sectores/ }));
     const visibles = GAME_CATEGORIES.filter((c) => c.id !== 'mundo');
     for (const cat of visibles) {
-      await user.click(within(group).getByRole('button', { name: cat.label }));
+      await user.click(within(group).getByRole('checkbox', { name: cat.label }));
     }
-    expect(chip('Todos')).toHaveAttribute('aria-pressed', 'true');
+    expect(box('Todos')).toBeChecked();
     for (const cat of visibles) {
-      expect(within(group).getByRole('button', { name: cat.label })).toHaveAttribute(
-        'aria-pressed',
-        'false',
-      );
+      expect(
+        within(group).getByRole('checkbox', { name: cat.label }),
+      ).not.toBeChecked();
     }
-    // 'mundo' NO se muestra como chip en el casual.
-    expect(within(group).queryByRole('button', { name: 'Mundo' })).toBeNull();
+    // 'mundo' NO se muestra como fila propia en el casual.
+    expect(within(group).queryByRole('checkbox', { name: 'Mundo' })).toBeNull();
   });
 
   it('ronda con la unión de dos categorías: cada país cae en Oceanía ∪ América del Sur hasta /resultado', async () => {
@@ -341,8 +347,8 @@ describe('Selector de categorías (Home)', () => {
     render(<App />);
 
     const group = screen.getByRole('group', { name: 'Categorías' });
-    await user.click(within(group).getByRole('button', { name: 'Oceanía' }));
-    await user.click(within(group).getByRole('button', { name: 'América del Sur' }));
+    await user.click(within(group).getByRole('checkbox', { name: 'Oceanía' }));
+    await user.click(within(group).getByRole('checkbox', { name: 'América del Sur' }));
 
     await user.click(screen.getByRole('button', { name: 'Empezar' }));
 
