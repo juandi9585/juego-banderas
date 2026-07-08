@@ -1,3 +1,5 @@
+/* Opción-sticker: papel con contorno mid + sombra dura pequeña. El borde queda
+   SIEMPRE en tinta (también al resolver): lo semántico es el relleno plano. */
 .option {
   position: relative;
   display: flex;
@@ -8,21 +10,26 @@
   min-height: 56px;
   padding: var(--space-3) var(--space-4);
   background: var(--c-surface);
-  border: var(--border-thin) solid var(--c-border);
+  border: var(--border-mid) solid var(--c-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
   text-align: left;
   color: var(--c-ink);
-  transition: border-color var(--dur-fast) var(--ease-standard),
-    background-color var(--dur-fast) var(--ease-standard),
+  transition: background-color var(--dur-fast) var(--ease-standard),
     transform var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-standard);
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
 .option:hover:not(:disabled) {
-  border-color: var(--c-border-strong);
-  transform: translateY(-1px);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-md);
+}
+
+.option:active:not(:disabled) {
+  transform: translate(var(--press-shift), var(--press-shift));
+  box-shadow: none;
 }
 
 .content {
@@ -43,10 +50,9 @@
 /* ── Estados tras responder ─────────────────────────────────────────────── */
 .correct {
   background: var(--c-success-tint);
-  border: 2px solid var(--c-success);
   color: var(--c-success-ink);
-  /* Settle de escala (§7) + anillo verde que florece y se apaga (§23.2). */
-  animation: settle var(--dur) var(--ease-spring),
+  /* Sello de acierto: stamp con rebote cartoon + anillo verde que se apaga. */
+  animation: stamp var(--dur-slow) var(--ease-pop),
     correctFlash var(--dur) var(--ease-out);
 }
 
@@ -56,7 +62,6 @@
 
 .incorrect {
   background: var(--c-error-tint);
-  border: 2px solid var(--c-error);
   color: var(--c-error-ink);
   animation: shake var(--dur) var(--ease-standard);
 }
@@ -66,7 +71,7 @@
 }
 
 .dimmed {
-  opacity: 0.55;
+  opacity: 0.5;
   box-shadow: none;
 }
 
@@ -75,15 +80,16 @@
   cursor: default;
 }
 
-@keyframes settle {
+/* El sello: se hunde un instante y rebota asentándose — un tampón sobre papel. */
+@keyframes stamp {
   0% {
-    transform: scale(1);
+    transform: scale(0.96);
   }
-  50% {
-    transform: scale(1.03);
+  45% {
+    transform: scale(1.05) rotate(-0.5deg);
   }
   100% {
-    transform: scale(1);
+    transform: scale(1) rotate(0deg);
   }
 }
 
@@ -93,10 +99,10 @@
     transform: translateX(0);
   }
   25% {
-    transform: translateX(-6px);
+    transform: translateX(-7px);
   }
   50% {
-    transform: translateX(6px);
+    transform: translateX(7px);
   }
   75% {
     transform: translateX(-3px);
@@ -119,7 +125,9 @@
   .incorrect {
     animation: none;
   }
-  .option:hover:not(:disabled) {
+  .option:hover:not(:disabled),
+  .option:active:not(:disabled) {
     transform: none;
+    box-shadow: var(--shadow-sm);
   }
 }

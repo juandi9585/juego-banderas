@@ -4,7 +4,7 @@
    compacta a ≈ el alto actual. */
 .ledger {
   background: var(--c-surface);
-  border: var(--border-thin) solid var(--c-border);
+  border: var(--border-mid) solid var(--c-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   overflow: hidden; /* clipa ticks, fondos y el colapso a la forma del card */

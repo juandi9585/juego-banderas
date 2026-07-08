@@ -40,8 +40,9 @@
   gap: var(--space-1);
   padding: var(--space-4);
   background: var(--c-surface);
-  border: var(--border-thin) solid var(--c-border);
-  border-radius: var(--radius-md);
+  border: var(--border-bold) solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .scoreTag {
@@ -70,19 +71,20 @@
   color: var(--c-accent-ink);
 }
 
-/* ── Banner de récord (§15, solo competitivo) ──────────────────────────────
-   Nuevo récord: el panel "prende" a latón (eco del acierto), hoist a la
-   izquierda, cifra en latón y un settle sobrio al montar. Sin confeti. */
+/* ── Banner de récord (solo competitivo) ──────────────────────────────────
+   Nuevo récord: el panel se vuelve pegatina amarilla, gira apenas (sticker
+   pegado con prisa) y asienta con rebote. El barrido de destello se queda. */
 .scorePanel.isRecord {
   position: relative;
-  border-color: var(--c-accent);
+  background: var(--c-note);
   padding-left: calc(var(--space-4) + var(--hoist-width));
-  animation: recordSettle var(--dur) var(--ease-spring);
-  overflow: hidden; /* recorta el barrido de latón a las esquinas del panel */
+  transform: rotate(-1deg);
+  animation: recordSettle var(--dur-slow) var(--ease-pop);
+  overflow: hidden; /* recorta el barrido de destello a las esquinas del panel */
 }
 
-/* Barrido de brillo de latón ONE-SHOT (§23.4): luz que resbala sobre metal
-   pulido. Arranca tras el settle (delay 160 ms) y sale de cuadro. No confeti. */
+/* Barrido de destello ONE-SHOT: luz que resbala sobre la pegatina. Arranca
+   tras el settle (delay 160 ms) y sale de cuadro. Sin confeti. */
 .scorePanel.isRecord::after {
   content: '';
   position: absolute;
@@ -105,11 +107,12 @@
   inset: 0 auto 0 0;
   width: var(--hoist-width);
   background: var(--c-accent);
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  border-radius: calc(var(--radius-lg) - var(--border-bold)) 0 0
+    calc(var(--radius-lg) - var(--border-bold));
 }
 
 .scorePanel.isRecord .scorePoints {
-  color: var(--c-accent);
+  color: var(--c-accent-strong);
 }
 
 /* Eyebrow "¡Nuevo récord!" (sustituye a la etiqueta "Puntaje" en este estado). */
@@ -133,13 +136,13 @@
 
 @keyframes recordSettle {
   0% {
-    transform: scale(1);
+    transform: scale(0.94) rotate(0.5deg);
   }
-  40% {
-    transform: scale(1.03);
+  55% {
+    transform: scale(1.04) rotate(-1.6deg);
   }
   100% {
-    transform: scale(1);
+    transform: scale(1) rotate(-1deg);
   }
 }
 
@@ -178,8 +181,9 @@
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
   background: var(--c-surface);
-  border: var(--border-thin) solid var(--c-border);
+  border: var(--border-mid) solid var(--c-border);
   border-radius: var(--radius-md);
+  box-shadow: var(--shadow-thumb);
 }
 
 .reviewFlag {

@@ -1,9 +1,10 @@
+/* Cabecera: cartulina lima con regla de tinta bold — el marco del álbum. */
 .header {
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
   background: var(--c-bg);
-  border-bottom: var(--border-thin) solid var(--c-border);
+  border-bottom: var(--border-bold) solid var(--c-border);
 }
 
 .inner {
@@ -17,11 +18,14 @@
   gap: var(--space-3);
 }
 
+/* En móvil el wordmark parte en dos líneas: con leading apretado lee como
+   lockup de logo apilado, no como texto desbordado. */
 .wordmark {
   font-family: var(--font-display);
-  font-weight: var(--weight-bold);
+  font-weight: var(--weight-display);
   font-size: var(--text-base);
   letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
   color: var(--c-ink);
 }
 
@@ -41,20 +45,26 @@
   align-items: center;
   min-height: var(--tap-min);
   padding: var(--space-1) var(--space-3);
+  border: var(--border-mid) solid transparent;
   border-radius: var(--radius-pill);
   font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-semibold);
   color: var(--c-ink-2);
   transition: color var(--dur-fast) var(--ease-standard),
-    background-color var(--dur-fast) var(--ease-standard);
+    border-color var(--dur-fast) var(--ease-standard);
 }
 
 .link:hover {
   color: var(--c-ink);
 }
 
-.active {
-  background: var(--c-accent-tint);
-  color: var(--c-accent-ink);
-  font-weight: var(--weight-semibold);
+/* Pestaña activa: pegatina amarilla con contorno de tinta. El :hover explícito
+   evita que .link:hover (más específico) pinte tinta clara sobre el amarillo
+   en dark. */
+.active,
+.active:hover {
+  background: var(--c-marker);
+  border-color: var(--c-border);
+  color: var(--c-on-marker);
+  font-weight: var(--weight-bold);
 }

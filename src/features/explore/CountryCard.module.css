@@ -1,25 +1,31 @@
+/* Tarjeta de país: sticker coleccionable. Hover la despega (sube, sombra
+   crece y gira apenas); active la pega contra el papel. */
 .card {
   display: grid;
   gap: var(--space-2);
   padding: var(--space-3);
   background: var(--c-surface);
-  border: var(--border-thin) solid var(--c-border);
+  border: var(--border-mid) solid var(--c-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--dur-fast) var(--ease-standard),
+  transition: box-shadow var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-out);
 }
 
-.card:hover,
-.card:active {
+.card:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  transform: translate(-2px, -2px) rotate(-0.6deg);
+}
+
+.card:active {
+  box-shadow: none;
+  transform: translate(var(--press-shift), var(--press-shift));
 }
 
 .name {
   font-family: var(--font-display);
   font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-tight);
   line-height: var(--leading-snug);
   color: var(--c-ink);
@@ -42,5 +48,6 @@
   .card:hover,
   .card:active {
     transform: none;
+    box-shadow: var(--shadow-sm);
   }
 }

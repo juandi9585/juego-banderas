@@ -23,6 +23,8 @@
 .title {
   font-size: var(--text-2xl);
   font-weight: var(--weight-display);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-normal);
 }
 
 .controls {
@@ -36,21 +38,29 @@
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-base);
   background: var(--c-surface);
-  border: var(--border-thin) solid var(--c-border);
+  border: var(--border-mid) solid var(--c-border);
   border-radius: var(--radius-md);
   color: var(--c-ink);
-  transition: border-color var(--dur-fast) var(--ease-standard),
-    box-shadow var(--dur-fast) var(--ease-standard);
+  transition: box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
 }
 
 .search::placeholder {
   color: var(--c-ink-3);
 }
 
+/* Foco: el buscador se levanta con sombra dura violeta (mismo gesto que el
+   input del modo escrito). */
 .search:focus {
   outline: none;
-  border-color: var(--c-accent);
-  box-shadow: var(--shadow-focus);
+  transform: translate(-2px, -2px);
+  box-shadow: 3px 3px 0 var(--c-accent-strong);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search:focus {
+    transform: none;
+  }
 }
 
 .count {

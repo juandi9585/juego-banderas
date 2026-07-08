@@ -4,30 +4,44 @@
   gap: var(--space-2);
 }
 
+/* Chip-sticker: contorno de tinta y sombra pequeña; al elegirse se vuelve
+   pegatina amarilla y se "pega" al papel (pierde la sombra). */
 .chip {
   display: inline-flex;
   align-items: center;
   min-height: var(--tap-min);
   padding: var(--space-1) var(--space-4);
   background: var(--c-surface);
-  border: var(--border-thin) solid var(--c-border);
+  border: var(--border-mid) solid var(--c-border);
   border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-thumb);
   font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-semibold);
   color: var(--c-ink-2);
   transition: background-color var(--dur-fast) var(--ease-standard),
-    border-color var(--dur-fast) var(--ease-standard),
-    color var(--dur-fast) var(--ease-standard);
+    color var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
 .chip:hover {
-  border-color: var(--c-border-strong);
   color: var(--c-ink);
+  transform: translate(-1px, -1px);
 }
 
-.selected {
-  background: var(--c-accent-tint);
-  border-color: var(--c-accent);
-  color: var(--c-accent-ink);
-  font-weight: var(--weight-semibold);
+/* El :hover explícito evita que .chip:hover pinte tinta clara sobre el
+   amarillo en dark. */
+.selected,
+.selected:hover {
+  background: var(--c-marker);
+  color: var(--c-on-marker);
+  font-weight: var(--weight-bold);
+  transform: none;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip:hover {
+    transform: none;
+  }
 }

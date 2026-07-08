@@ -1,53 +1,67 @@
 /* ============================================================================
-   Banderas del Mundo — Design tokens
-   Owner: ui-designer. Concepto: "Carta náutica / guía de campo del vexilólogo".
+   Banderas del Mundo — Design tokens · REDISEÑO NEOBRUTALISTA (rama experimental)
+   Owner: ui-designer. Concepto: "álbum de pegatinas" — las banderas son stickers
+   sobre cartulina lima: contornos de tinta gruesos, sombras duras desplazadas
+   (sin desenfoque), colores planos saturados y física de "presionar el sticker"
+   en cada control (hover levanta, active hunde y colapsa la sombra).
    Solo tokens (custom properties) + reset y base mínimos. NADA de estilos de
-   componentes (esos van en CSS Modules por componente). Ver docs/design.md.
+   componentes (esos van en CSS Modules por componente).
 
-   Familias tipográficas (self-host con @fontsource; los importa frontend-engineer):
+   Familias tipográficas (self-host con @fontsource, ya instaladas):
      @fontsource-variable/bricolage-grotesque   -> "Bricolage Grotesque Variable"
      @fontsource-variable/hanken-grotesk         -> "Hanken Grotesk Variable"
      @fontsource-variable/spline-sans-mono       -> "Spline Sans Mono Variable"
+   Bricolage a peso 800 ES la voz neobrutalista: no hace falta fuente nueva.
    ========================================================================== */
 
 :root {
   /* ---- Color · paleta con nombre (light, principal) --------------------- */
-  --c-bg: #F2F5F7;              /* Papel — fondo, papel de carta frío */
-  --c-surface: #FFFFFF;         /* Carta — superficie / interior de bandera */
-  --c-surface-2: #E9EEF2;       /* superficie hundida / pistas */
-  --c-note: #FBF6EE;            /* Nota — papel cálido para la ficha cultural */
+  --c-bg: #CDEF54;              /* Cartulina — lima ácido, fondo de app */
+  --c-surface: #FFFEF6;         /* Papel — tarjetas, opciones, ledgers */
+  --c-surface-2: #EFF4CF;       /* superficie hundida / bandas de grupo */
+  --c-note: #FFD43D;            /* Sticker — amarillo de la ficha cultural */
 
-  --c-ink: #12293F;             /* Tinta — texto primario, titulares */
-  --c-ink-2: #4C6072;           /* Pizarra — texto secundario */
-  --c-ink-3: #5E7182;           /* muted — captions, placeholders */
+  /* Marcador de selección: amarillo pleno en AMBOS modos (pestaña activa,
+     thumb del segmented, chip elegido) con tinta negra fija encima. No
+     confundir con --c-note, que se apaga en dark por ser superficie grande. */
+  --c-marker: #FFD43D;
+  --c-on-marker: #131505;
 
-  --c-border: #DCE3E9;          /* borde neutro (marco de bandera) */
-  --c-border-strong: #C4CFD8;   /* borde acentuado / marca de hoist neutra */
+  --c-ink: #131505;             /* Tinta — texto primario Y todos los contornos */
+  --c-ink-2: #3D4128;           /* secundario */
+  --c-ink-3: #5C6142;           /* muted — captions, placeholders */
 
-  /* Latón (acento cálido, único; usar con disciplina) */
-  --c-accent: #B8742A;          /* decorativo, marca de hoist activa, progreso */
-  --c-accent-strong: #9C5F1B;   /* superficie de CTA (texto blanco, AA) */
-  --c-accent-tint: #F5E9D6;     /* fondos suaves / segmento activo */
-  --c-accent-ink: #6E4310;      /* texto latón sobre claro (AA) */
+  /* En neobrutalismo el borde ES tinta: mismo negro para hairlines y contornos.
+     El grosor (thin/mid/bold) es quien jerarquiza, no el color. */
+  --c-border: #131505;
+  --c-border-strong: #131505;
+
+  /* Violeta (acento eléctrico; CTA y marcas de selección) */
+  --c-accent: #7A5AF8;          /* decorativo, barras de marca, progreso */
+  --c-accent-strong: #5B3DF5;   /* superficie de CTA (texto blanco, AA) */
+  --c-accent-tint: #E6DFFF;     /* fondos suaves / fila seleccionada */
+  --c-accent-ink: #4A2BD9;      /* texto violeta sobre claro (AA) */
   --c-on-accent: #FFFFFF;
 
-  /* Semánticos */
-  --c-success: #2E7D5B;         /* Verde tierra */
-  --c-success-tint: #E3F1E9;
-  --c-success-ink: #1F6046;
-  --c-error: #C43D3D;           /* Rojo señal */
-  --c-error-tint: #FBE7E5;
-  --c-error-ink: #A32A2A;
+  /* Semánticos: rellenos planos saturados con tinta oscura encima */
+  --c-success: #1E9E52;         /* Verde sello */
+  --c-success-tint: #8EE6A9;
+  --c-success-ink: #0B4D26;
+  --c-error: #E03E2D;           /* Coral señal */
+  --c-error-tint: #FFA694;
+  --c-error-ink: #741204;
 
-  --c-focus: var(--c-accent);
+  --c-focus: var(--c-accent-strong);
 
-  /* Interior de la tarjeta de bandera (blanco real => color de bandera fiel;
-     ver override en dark). */
+  /* Interior de la tarjeta de bandera (blanco real => color de bandera fiel). */
   --c-flag-bg: #FFFFFF;
 
-  /* Retícula (atmósfera cartográfica; aplicar como background-image en hero/
-     cabecera de Explorar, nunca sobre contenido denso ni sobre banderas). */
-  --graticule-line: rgba(18, 41, 63, 0.055);
+  /* Color de las sombras duras (tinta; en dark pasa a negro puro). */
+  --c-shadow: #131505;
+
+  /* Retícula (atmósfera de cuaderno; background-image en cabeceras, nunca
+     sobre contenido denso ni sobre banderas). */
+  --graticule-line: rgba(19, 21, 5, 0.08);
   --graticule: repeating-linear-gradient(0deg,  transparent 0 23px, var(--graticule-line) 23px 24px),
                repeating-linear-gradient(90deg, transparent 0 23px, var(--graticule-line) 23px 24px);
 
@@ -65,7 +79,7 @@
   --text-xl:  1.375rem;   /* 22px — nombre de país, título de tarjeta */
   --text-2xl: 1.75rem;    /* 28px — título de página */
   --text-3xl: 2.25rem;    /* 36px — display / hero */
-  --text-4xl: 3rem;       /* 48px — hero grande (opcional) */
+  --text-4xl: 3rem;       /* 48px — hero grande (marcador del resultado) */
 
   --leading-tight: 1.08;
   --leading-snug: 1.25;
@@ -80,7 +94,7 @@
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
-  --weight-display: 800;
+  --weight-display: 800;     /* Bricolage 800: la voz del rediseño */
 
   /* ---- Espaciado (base 4px) -------------------------------------------- */
   --space-0: 0;
@@ -96,30 +110,43 @@
   --space-16: 4rem;     /* 64 */
   --space-20: 5rem;     /* 80 */
 
-  /* ---- Radios ----------------------------------------------------------- */
+  /* ---- Radios (esquinas chunky, como las pegatinas troqueladas) --------- */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
   --radius-xl: 20px;
   --radius-pill: 999px;
 
-  /* ---- Bordes / signature ---------------------------------------------- */
+  /* ---- Bordes / signature ----------------------------------------------
+     Tres grosores de tinta: hairline para separadores internos, mid para
+     tarjetas y controles, bold para CTAs y el marco de página. */
   --border-thin: 1px;
-  --hoist-width: 4px;    /* ancho de la marca de hoist (elemento signature) */
+  --border-mid: 2px;
+  --border-bold: 3px;
+  --hoist-width: 6px;    /* barra-marcador lateral (herencia del hoist, ahora rotulador) */
 
-  /* ---- Sombras (tintadas en navy, no negro puro) ----------------------- */
-  --shadow-sm: 0 1px 2px rgba(18, 41, 63, 0.06), 0 1px 3px rgba(18, 41, 63, 0.07);
-  --shadow-md: 0 2px 6px rgba(18, 41, 63, 0.07), 0 8px 20px rgba(18, 41, 63, 0.08);
-  --shadow-lg: 0 10px 34px rgba(18, 41, 63, 0.13);
-  --shadow-focus: 0 0 0 3px rgba(184, 116, 42, 0.35);
+  /* ---- Sombras (DURAS: offset sin blur — el sticker despegado del papel) */
+  --shadow-sm: 3px 3px 0 var(--c-shadow);
+  --shadow-md: 5px 5px 0 var(--c-shadow);
+  --shadow-lg: 9px 9px 0 var(--c-shadow);
+  --shadow-focus: 0 0 0 3px rgba(91, 61, 245, 0.35);
+  --shadow-thumb: 2px 2px 0 var(--c-shadow);  /* piezas pequeñas (thumb, chips) */
 
-  /* ---- Motion ----------------------------------------------------------- */
+  /* ---- Motion ------------------------------------------------------------
+     La física del sistema: hover LEVANTA el sticker (translate −, sombra crece),
+     active lo HUNDE contra el papel (translate +, sombra colapsa a 0). --ease-pop
+     es el rebote cartoon de las apariciones; --ease-spring queda para asentados. */
   --dur-fast: 120ms;
   --dur: 200ms;
   --dur-slow: 320ms;
   --ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* solo para el "asentado" del acierto */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-pop: cubic-bezier(0.25, 1.65, 0.4, 1);  /* overshoot cartoon (pop-in) */
+
+  /* Desplazamiento de la física de pulsación (comparte valor con --shadow-sm:
+     al hundirse, el sticker recorre exactamente su sombra). */
+  --press-shift: 3px;
 
   /* ---- Layout ----------------------------------------------------------- */
   --content-max: 30rem;  /* ~480px, tope mobile-first */
@@ -130,143 +157,98 @@
   --z-raised: 10;
   --z-sticky: 100;
   --z-overlay: 1000;   /* scrim del bottom sheet */
-  --z-sheet: 1001;     /* hoja "nota de campo" (sobre el scrim) */
+  --z-sheet: 1001;     /* hoja de feedback (sobre el scrim) */
   --z-toast: 1100;
 
-  /* ---- Iteración 2 · juego sin scroll + bottom sheet "nota de campo" ----
-     Ver docs/design.md §10. El objetivo es que la pantalla de pregunta quepa
-     completa en 360×640 sin scroll y que el feedback sea una hoja modal que no
-     empuja el contenido. */
-
-  /* Barra superior compacta del juego (progreso + salir). Reemplaza al
-     AppHeader global durante la partida; conserva tap-min. */
+  /* ---- Juego sin scroll + bottom sheet ---------------------------------- */
   --game-topbar-h: 44px;
-
-  /* Padding vertical de la pantalla de juego (mucho más compacto que el de
-     `main`, que es --space-5/--space-12). Los lados siguen en --space-4. */
-  --game-pad-block: var(--space-3);   /* 12px arriba y abajo del área de juego */
-
-  /* Cap de alto de la bandera héroe (flag→name y type-name). Es el elemento
-     ELÁSTICO del layout: `flex: 1 1 auto` que encoge con este techo, de modo que
-     el total nunca desborda 640. 30dvh en 360×640 ≈ 192px; techo duro 220px para
-     que al retraerse la barra del navegador (dvh mayor) no genere scroll. */
+  --game-pad-block: var(--space-3);
   --flag-hero-max-h: clamp(150px, 30dvh, 220px);
 
-  /* Bottom sheet "nota de campo" (feedback tras responder) */
-  --scrim: rgba(18, 41, 63, 0.44);    /* Tinta @44% — atenúa la pregunta detrás */
-  --sheet-max-h: 88dvh;               /* tope; el área de datos scrollea dentro */
-  --sheet-radius: var(--radius-xl);   /* radio de las esquinas SUPERIORES (20px) */
-  --sheet-pad: var(--space-5);        /* padding interior (lados y superior) */
+  /* Bottom sheet (feedback tras responder) */
+  --scrim: rgba(19, 21, 5, 0.50);
+  --sheet-max-h: 88dvh;
+  --sheet-radius: var(--radius-xl);
+  --sheet-pad: var(--space-5);
 
-  /* ---- Iteración 3 · modo competitivo (docs/design.md §13–§18) ----------
-     Único token de diseño nuevo: el grosor de la "mecha" del countdown, que se
-     dibuja a ras del borde inferior del GameTopBar (cero altura añadida). El
-     resto reutiliza tokens existentes. Coherente con --hoist-width (4px). */
-  --countdown-track-h: 3px;
+  /* ---- Competitivo: mecha del countdown --------------------------------- */
+  --countdown-track-h: 4px;
 
-  /* ---- Iteración B · Juice de UX (docs/design.md §20–§25) ----------------
-     El SONIDO no lleva tokens CSS: son WAVs en `public/sounds/` (generados por
-     `scripts/generate-sounds.mjs`) + el módulo `src/lib/sound.ts`. Aquí solo lo que
-     toca a CSS: el brillo de latón del récord, el halo de confirmación del
-     acierto, las duraciones nuevas de motion y los tamaños de silueta.
-     Regla de Chanel: es "brillo de latón, no confeti" — todos los cálidos son
-     de latón pulido, ninguno es blanco de flash ni saturado. */
-
-  /* Brillo de latón: barrido ONE-SHOT del banner "¡Nuevo récord!" (§23.4).
-     Colores cálidos con núcleo casi-blanco muy breve (el "glint" del metal),
-     NUNCA blanco pleno ni un color nuevo: es el latón del sistema, pulido. */
-  --c-brass-glint: rgba(255, 240, 214, 0.85);   /* núcleo del destello (cálido) */
-  --c-brass-sheen: rgba(214, 164, 96, 0.50);    /* banda de latón alrededor */
+  /* ---- Juice de UX (sonido/animación/siluetas) ---------------------------
+     El barrido del "¡Nuevo récord!" deja de ser latón pulido y pasa a ser un
+     destello de rotulador fluor: núcleo casi blanco + banda amarillo sticker. */
+  --c-brass-glint: rgba(255, 255, 255, 0.85);
+  --c-brass-sheen: rgba(255, 212, 61, 0.55);
   --brass-sweep: linear-gradient(105deg,
     transparent 34%, var(--c-brass-sheen) 46%, var(--c-brass-glint) 50%,
     var(--c-brass-sheen) 54%, transparent 66%);
 
-  /* Halo de confirmación del acierto: anillo verde que se expande y se apaga
-     (§23.2). Verde tierra @45% → transparente en el keyframe. */
-  --glow-correct: rgba(46, 125, 91, 0.45);
+  /* Halo de confirmación del acierto: anillo verde que se expande y se apaga. */
+  --glow-correct: rgba(30, 158, 82, 0.50);
 
-  /* Duraciones nuevas de motion (las base --dur-fast/--dur/--dur-slow siguen). */
-  --dur-pulse: 1000ms;  /* un latido por segundo de la mecha en warn (§23.3),
-                           en fase con el tic sonoro (que suena cada 1000 ms) */
-  --dur-sheen: 900ms;   /* barrido de latón del récord (§23.4) */
-  --dur-vt: 180ms;      /* cross-fade de View Transitions entre pestañas (§23.5) */
+  --dur-pulse: 1000ms;  /* latido de la mecha en warn, en fase con el tic */
+  --dur-sheen: 900ms;   /* barrido del récord */
+  --dur-vt: 180ms;      /* cross-fade de View Transitions entre pestañas */
 
-  /* Tamaños de silueta de mapa (§24). Los SVG llegan normalizados a viewBox
-     cuadrado, un path, fill="currentColor"; se tiñen vía `color` con la técnica
-     de mask (ver §24), de modo que el mismo asset sirve en tinta o en latón. */
-  --shape-sm: 16px;   /* meta/mono (reservado; los chips del casual NO la usan, §24.2) */
-  --shape-md: 20px;   /* filas del ledger competitivo (§24.1) Y del casual (§26.4) */
-  --shape-lg: 32px;   /* cabecera de la ficha de Explorar (§24.3) */
+  /* Tamaños de silueta de mapa (mask + currentColor). */
+  --shape-sm: 16px;
+  --shape-md: 20px;
+  --shape-lg: 32px;
 
-  /* ---- Iteración C · Módulo Jugar con "feel" (docs/design.md §26) ----------
-     Los controles se vuelven SLIDERS (un thumb de latón que se desliza entre
-     opciones) y el casual pasa a un "índice de especímenes": ledger multi-select
-     con siluetas de zona a --shape-md (20px), del mismo mundo que el competitivo.
-     Todo reutiliza la paleta y el latón; aquí solo lo nuevo: la duración/tacto
-     del deslizamiento y una sombra tenue que "levanta" el thumb como pieza física
-     sobre su carril. Sigue mandando "brillo de latón, no confeti": el thumb es
-     latón tenue (--c-accent-tint), jamás un color nuevo. */
-  --dur-slide: 220ms;   /* deslizamiento del thumb del SegmentedControl y del hoist de pestaña
-                           (un pelín > --dur para que el trayecto se LEA como slider) */
-  --shadow-thumb: 0 1px 1px rgba(18, 41, 63, 0.10),
-                  0 2px 5px rgba(18, 41, 63, 0.08); /* eleva el thumb del carril */
+  /* ---- Módulo Jugar: sliders --------------------------------------------- */
+  --dur-slide: 220ms;   /* deslizamiento del thumb del SegmentedControl */
 
   color-scheme: light;
 }
 
 /* ============================================================================
-   Dark (secundario) — solo por media query. Se mantiene el interior de la
-   tarjeta de bandera CLARO para que los colores de las banderas sean fieles.
+   Dark (secundario) — solo por media query. La tinta se invierte: contornos
+   crema sobre oliva profundo, sombras duras en negro puro (la superficie es
+   más clara que el fondo, así el bloque de sombra se lee). El interior de la
+   tarjeta de bandera sigue CLARO para que los colores de las banderas sean
+   fieles.
    ========================================================================== */
 @media (prefers-color-scheme: dark) {
   :root {
-    --c-bg: #0E1E2E;
-    --c-surface: #17293A;
-    --c-surface-2: #10202F;
-    --c-note: #21313F;            /* nota: navy cálido; el signature de latón la distingue */
+    --c-bg: #16180C;
+    --c-surface: #232816;
+    --c-surface-2: #1B1F0F;
+    --c-note: #34320F;            /* la ficha pierde el amarillo pleno en dark */
 
-    --c-ink: #E7EEF4;
-    --c-ink-2: #A7B7C4;
-    --c-ink-3: #8497A6;
+    --c-ink: #F2F5DC;
+    --c-ink-2: #C7CCA6;
+    --c-ink-3: #999F7C;
 
-    --c-border: #2A3D4E;
-    --c-border-strong: #3A4F62;
+    --c-border: #F2F5DC;          /* contorno crema: la tinta invertida */
+    --c-border-strong: #F2F5DC;
 
-    --c-accent: #CE8A3C;
-    --c-accent-strong: #CE8A3C;   /* CTA en dark: usar texto Tinta (--c-on-accent) */
-    --c-accent-tint: #33291B;
-    --c-accent-ink: #E7B472;
-    --c-on-accent: #12293F;       /* texto oscuro sobre latón claro en dark */
+    --c-accent: #9D85FF;
+    --c-accent-strong: #8A6FFF;   /* CTA en dark: texto Tinta oscura encima */
+    --c-accent-tint: #322952;
+    --c-accent-ink: #BCAAFF;
+    --c-on-accent: #131505;
 
-    --c-success: #4FB488;
-    --c-success-tint: #16362A;
-    --c-success-ink: #8FD9B8;
-    --c-error: #E06A63;
-    --c-error-tint: #3A211F;
-    --c-error-ink: #F0A9A3;
+    --c-success: #4ADE80;
+    --c-success-tint: #14371F;
+    --c-success-ink: #7FE3A4;
+    --c-error: #FF6B57;
+    --c-error-tint: #43150D;
+    --c-error-ink: #FFA694;
 
-    --c-flag-bg: #EEF2F5;         /* interior de bandera claro también en dark */
+    --c-flag-bg: #EEF2F5;
 
-    --graticule-line: rgba(231, 238, 244, 0.06);
+    --c-shadow: #000000;
 
-    /* Scrim más denso en dark (el fondo ya es navy profundo). */
-    --scrim: rgba(2, 8, 14, 0.60);
+    --graticule-line: rgba(242, 245, 220, 0.06);
 
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.30), 0 1px 3px rgba(0, 0, 0, 0.35);
-    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35), 0 8px 20px rgba(0, 0, 0, 0.40);
-    --shadow-lg: 0 10px 34px rgba(0, 0, 0, 0.50);
-    --shadow-focus: 0 0 0 3px rgba(206, 138, 60, 0.45);
+    --scrim: rgba(0, 0, 0, 0.62);
 
-    /* Iteración C (§26): el thumb deslizante sobre navy profundo necesita una
-       sombra más marcada para separarse del carril. */
-    --shadow-thumb: 0 1px 2px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.30);
+    --shadow-focus: 0 0 0 3px rgba(157, 133, 255, 0.45);
 
-    /* Iteración B (§20–§25): el brillo de latón sobre navy profundo mantiene el
-       núcleo cálido; el sheen usa el latón claro del dark (#CE8A3C). El halo de
-       acierto usa el verde claro del dark. */
-    --c-brass-glint: rgba(255, 235, 200, 0.70);
-    --c-brass-sheen: rgba(206, 138, 60, 0.50);
-    --glow-correct: rgba(79, 180, 136, 0.50);
+    /* Destello del récord sobre oliva profundo: mismo gesto, menos alfa. */
+    --c-brass-glint: rgba(255, 245, 200, 0.65);
+    --c-brass-sheen: rgba(255, 212, 61, 0.35);
+    --glow-correct: rgba(74, 222, 128, 0.45);
 
     color-scheme: dark;
   }
@@ -307,7 +289,7 @@ body {
 
 h1, h2, h3, h4 {
   font-family: var(--font-display);
-  font-weight: var(--weight-bold);
+  font-weight: var(--weight-display);
   line-height: var(--leading-snug);
   letter-spacing: var(--tracking-tight);
   color: var(--c-ink);
@@ -335,16 +317,16 @@ a {
   text-decoration: none;
 }
 
-/* Foco visible (halo de latón) — solo teclado/AT, no en click de ratón */
+/* Foco visible (trazo violeta grueso) — solo teclado/AT, no en click de ratón */
 :focus-visible {
-  outline: 2px solid var(--c-focus);
+  outline: 3px solid var(--c-focus);
   outline-offset: 2px;
   border-radius: 2px;
 }
 
 ::selection {
-  background: var(--c-accent-tint);
-  color: var(--c-ink);
+  background: var(--c-marker);
+  color: var(--c-on-marker);
 }
 
 /* Motion sobrio: neutraliza duraciones si el usuario lo pide. Los componentes,

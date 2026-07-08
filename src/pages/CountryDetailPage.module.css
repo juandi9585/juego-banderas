@@ -3,19 +3,41 @@
   gap: var(--space-5);
 }
 
+/* Volver: mini sticker presionable. */
 .back {
   justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   min-height: var(--tap-min);
+  padding-inline: var(--space-3);
+  background: var(--c-surface);
+  border: var(--border-mid) solid var(--c-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-thumb);
   font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  color: var(--c-ink-2);
+  font-weight: var(--weight-semibold);
+  color: var(--c-ink);
+  transition: transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
 .back:hover {
-  color: var(--c-ink);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.back:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .back:hover,
+  .back:active {
+    transform: none;
+    box-shadow: var(--shadow-thumb);
+  }
 }
 
 /* Cabecera de la ficha (§24.3): silueta del país + bloque nombre/oficial. */
@@ -53,8 +75,9 @@
   gap: var(--space-2);
   padding: var(--space-4);
   background: var(--c-surface);
-  border: var(--border-thin) solid var(--c-border);
+  border: var(--border-mid) solid var(--c-border);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .row {

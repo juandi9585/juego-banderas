@@ -1,13 +1,14 @@
-/* Control segmentado con thumb slider (docs/design.md §26.2). El segmento activo
-   ya NO tiene fondo propio: lo aporta el `.thumb` de latón que se desliza por
-   índice. Cubre fila (`--radius-pill`) y columna (`--radius-lg`). */
+/* Control segmentado con thumb slider. El segmento activo no tiene fondo
+   propio: lo aporta el `.thumb` — ahora una pegatina amarilla con contorno de
+   tinta y sombra dura — que se desliza por índice. Cubre fila (--radius-pill)
+   y columna (--radius-lg). */
 .group {
   position: relative; /* bloque contenedor del thumb */
   isolation: isolate; /* thumb bajo el texto sin z-index global */
   display: flex;
   gap: var(--space-1);
   background: var(--c-surface);
-  border: var(--border-thin) solid var(--c-border);
+  border: var(--border-mid) solid var(--c-border);
   border-radius: var(--radius-pill);
   padding: var(--space-1);
 }
@@ -17,7 +18,7 @@
   border-radius: var(--radius-lg);
 }
 
-/* El carril del slider: una sola pieza de latón tenue, tamaño de UN segmento.
+/* El carril del slider: una pieza amarilla, tamaño de UN segmento.
    El % de translateX se resuelve contra el ancho propio (= un segmento), así que
    la zancada exacta es 100% + gap; el % de width se resuelve contra la caja de
    padding del contenedor, de ahí el − (N+1)·gap (2 de padding + N−1 huecos). */
@@ -30,7 +31,8 @@
   left: var(--space-1);
   width: calc((100% - (var(--seg-count) + 1) * var(--space-1)) / var(--seg-count));
   transform: translateX(calc(var(--seg-index) * (100% + var(--space-1))));
-  background: var(--c-accent-tint);
+  background: var(--c-marker);
+  border: var(--border-mid) solid var(--c-border);
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow-thumb);
   transition: transform var(--dur-slide) var(--ease-out);
@@ -78,7 +80,10 @@
   color: var(--c-ink);
 }
 
-.selected {
-  color: var(--c-accent-ink);
-  font-weight: var(--weight-semibold);
+/* Texto sobre la pegatina amarilla: tinta fija (el amarillo no cambia en dark).
+   El :hover explícito evita que .segment:hover la pise en dark. */
+.selected,
+.selected:hover {
+  color: var(--c-on-marker);
+  font-weight: var(--weight-bold);
 }

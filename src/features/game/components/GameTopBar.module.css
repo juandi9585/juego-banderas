@@ -49,7 +49,7 @@
    "asentado" de latón que el acierto). Sin brillo extra: el color ya lo dice. */
 .streakValue {
   display: inline-block;
-  animation: streakPop var(--dur) var(--ease-spring);
+  animation: streakPop var(--dur) var(--ease-pop);
 }
 
 @keyframes streakPop {
@@ -58,7 +58,7 @@
     transform: scale(1);
   }
   45% {
-    transform: scale(1.18);
+    transform: scale(1.3);
   }
 }
 
@@ -108,7 +108,9 @@
   right: 0;
   bottom: 0;
   height: var(--countdown-track-h);
-  background: var(--c-border);
+  /* Carril hundido (no --c-border: en el rediseño el borde es tinta pura y
+     pintaría una regla negra permanente). */
+  background: var(--c-surface-2);
 }
 
 .countdownFuse > i {

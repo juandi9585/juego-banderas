@@ -4,19 +4,22 @@
   gap: var(--space-3);
 }
 
+/* Regla de progreso: carril de papel con contorno de tinta; el relleno violeta
+   avanza dentro. Los ticks siguen marcando los segmentos, ahora en tinta. */
 .track {
   position: relative;
   flex: 1;
-  height: 8px;
-  background-color: var(--c-border);
+  height: 12px;
+  background-color: var(--c-surface);
   /* Ticks de regla graduada: una marca por segmento. */
   background-image: repeating-linear-gradient(
     90deg,
     transparent 0,
     transparent calc(var(--segment, 10%) - 1px),
-    var(--c-border-strong) calc(var(--segment, 10%) - 1px),
-    var(--c-border-strong) var(--segment, 10%)
+    var(--graticule-line) calc(var(--segment, 10%) - 1px),
+    var(--graticule-line) var(--segment, 10%)
   );
+  border: var(--border-mid) solid var(--c-border);
   border-radius: var(--radius-pill);
   overflow: hidden;
 }
@@ -31,6 +34,7 @@
 .counter {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
   color: var(--c-ink-2);
   white-space: nowrap;
 }

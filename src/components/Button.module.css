@@ -1,3 +1,5 @@
+/* Botón-sticker: contorno bold + sombra dura. Hover levanta (−1px, sombra
+   crece); active hunde (recorre --press-shift y la sombra colapsa a 0). */
 .button {
   display: flex;
   align-items: center;
@@ -5,46 +7,45 @@
   width: 100%;
   min-height: 52px;
   padding: var(--space-3) var(--space-5);
+  border: var(--border-bold) solid var(--c-border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
-  font-weight: var(--weight-semibold);
-  transition: background-color var(--dur-fast) var(--ease-standard),
-    border-color var(--dur-fast) var(--ease-standard),
-    transform var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-standard);
+  font-weight: var(--weight-bold);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.button:active {
-  transform: translateY(1px);
+.button:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-md);
+}
+
+.button:active:not(:disabled) {
+  transform: translate(var(--press-shift), var(--press-shift));
+  box-shadow: none;
 }
 
 .primary {
   background: var(--c-accent-strong);
   color: var(--c-on-accent);
-  box-shadow: var(--shadow-sm);
-}
-
-.primary:hover {
-  filter: brightness(1.06);
 }
 
 .secondary {
   background: var(--c-surface);
-  border: var(--border-thin) solid var(--c-border-strong);
   color: var(--c-ink);
 }
 
-.secondary:hover {
-  border-color: var(--c-ink-3);
-}
-
 .button:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
+  box-shadow: none;
   pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .button:active {
+  .button:hover:not(:disabled),
+  .button:active:not(:disabled) {
     transform: none;
+    box-shadow: var(--shadow-sm);
   }
 }

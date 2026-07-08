@@ -1,5 +1,6 @@
-/* Pregunta: columna flex que rellena el área de juego sin scroll (§11). La
-   bandera héroe es el elemento elástico; prompt y opciones quedan fijos. */
+/* Pregunta: columna flex que rellena el área de juego sin scroll. La bandera
+   héroe es el elemento elástico; prompt y opciones quedan fijos. Entra con un
+   pop de rebote cartoon (--ease-pop), no con un fade tímido. */
 .question {
   flex: 1;
   min-height: 0;
@@ -7,12 +8,13 @@
   flex-direction: column;
   justify-content: center;
   gap: var(--space-3);
-  animation: fadeUp var(--dur) var(--ease-out);
+  animation: popIn var(--dur-slow) var(--ease-pop);
 }
 
 .prompt {
   flex: none;
   font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
   color: var(--c-ink-2);
   outline: none; /* foco programático al avanzar, sin halo visual */
 }
@@ -57,7 +59,7 @@
   gap: var(--space-3);
 }
 
-/* Contenedor del input: ancla del ✓ de confirmación (§23.2). */
+/* Contenedor del input: ancla del ✓ de confirmación. */
 .inputWrap {
   position: relative;
 }
@@ -68,48 +70,51 @@
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-lg);
   background: var(--c-surface);
-  border: var(--border-thin) solid var(--c-border);
+  border: var(--border-mid) solid var(--c-border);
   border-radius: var(--radius-md);
   color: var(--c-ink);
-  transition: border-color var(--dur-fast) var(--ease-standard),
-    box-shadow var(--dur-fast) var(--ease-standard);
+  transition: box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-standard);
 }
 
 .input::placeholder {
   color: var(--c-ink-3);
 }
 
+/* Foco: el campo se levanta y proyecta sombra dura VIOLETA — mismo lenguaje
+   de sticker, con el acento marcando "aquí se escribe". */
 .input:focus {
   outline: none;
-  border-color: var(--c-accent);
-  box-shadow: var(--shadow-focus);
+  transform: translate(-2px, -2px);
+  box-shadow: 3px 3px 0 var(--c-accent-strong);
 }
 
 .inputCorrect:disabled {
-  border: 2px solid var(--c-success);
+  background: var(--c-success-tint);
   color: var(--c-success-ink);
   padding-right: var(--space-10); /* deja sitio al ✓ */
 }
 
-/* Anillo verde de confirmación alrededor del campo (§23.2), como en la opción. */
+/* Anillo verde de confirmación alrededor del campo, como en la opción. */
 .inputCorrect {
   animation: correctFlash var(--dur) var(--ease-out);
 }
 
 .inputIncorrect:disabled {
-  border: 2px solid var(--c-error);
+  background: var(--c-error-tint);
   color: var(--c-error-ink);
 }
 
-/* ✓ que aparece con fade a la derecha del campo al acertar. */
+/* ✓ que aparece con un pop a la derecha del campo al acertar. */
 .inputCheck {
   position: absolute;
   right: var(--space-4);
   top: 50%;
   translate: 0 -50%;
-  color: var(--c-success);
+  color: var(--c-success-ink);
   font-weight: var(--weight-bold);
-  animation: checkFade var(--dur) var(--ease-out);
+  animation: checkPop var(--dur) var(--ease-pop);
 }
 
 @keyframes correctFlash {
@@ -121,12 +126,14 @@
   }
 }
 
-@keyframes checkFade {
+@keyframes checkPop {
   from {
     opacity: 0;
+    scale: 0.5;
   }
   to {
     opacity: 1;
+    scale: 1;
   }
 }
 
@@ -136,14 +143,14 @@
   color: var(--c-ink-3);
 }
 
-@keyframes fadeUp {
+@keyframes popIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(10px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -151,9 +158,13 @@
   .question {
     animation: none;
   }
-  /* Sin anillo ni fade (§23.2): el borde verde + el ✓ estáticos son la confirmación. */
+  /* Sin anillo ni pop: el relleno verde + el ✓ estáticos son la confirmación. */
   .inputCorrect,
   .inputCheck {
     animation: none;
+  }
+  .input:focus {
+    transform: none;
+    box-shadow: 3px 3px 0 var(--c-accent-strong);
   }
 }
