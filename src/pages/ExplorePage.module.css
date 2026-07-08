@@ -3,11 +3,12 @@
   gap: var(--space-5);
 }
 
-/* Cabecera con retícula tenue (eco cartográfico). */
+/* Cabecera con trama de puntos tenue (eco de la referencia). */
 .header {
   padding: var(--space-5) var(--space-4);
   margin-inline: calc(-1 * var(--space-4));
   background-image: var(--graticule);
+  background-size: var(--graticule-size);
 }
 
 .eyebrow {

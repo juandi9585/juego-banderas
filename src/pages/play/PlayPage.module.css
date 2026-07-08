@@ -15,6 +15,7 @@
   padding: var(--space-5) var(--space-4);
   margin-inline: calc(-1 * var(--space-4));
   background-image: var(--graticule);
+  background-size: var(--graticule-size);
 }
 
 .eyebrow {
@@ -54,76 +55,79 @@
   text-overflow: ellipsis;
 }
 
-/* ── Pestañas de carpeta (§19.2) ──────────────────────────────────────────
-   Enlaces con forma de pestaña de expediente: la activa abre hacia el panel
-   (sin borde inferior) y lleva el hoist de latón en el canto superior; las
-   inactivas quedan sobre la línea base. El hoist NUNCA toca las esquinas
-   redondeadas (lección del card del competitivo): va inset 12px por lado. */
+/* ── Pestañas-sticker (retrabajo del rediseño) ─────────────────────────────
+   Sin barra deslizante: el estado ES la posición física. La pestaña activa
+   se DESPEGA del papel (sube 3px, pegatina amarilla con sombra dura); la
+   inactiva se PEGA (baja 3px, superficie hundida, sin sombra). Al cambiar de
+   pestaña ambas transicionan a la vez en sentidos opuestos — un balancín. */
 .tabs {
-  position: relative; /* bloque contenedor del hoist */
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
-}
-
-/* Hoist de latón deslizante (§26.3): una sola barra, dimensionada a una pestaña
-   menos el inset de 12px/lado y posicionada por índice con `left`. Dos caminos
-   que no chocan: morph de View Transition (Chromium) o transición de `left`
-   (fallback sin VT, la instancia de PlayPage persiste). */
-.tabHoist {
-  position: absolute;
-  top: 0; /* sobre la línea superior de la tira */
-  height: 4px;
-  border-radius: 0 0 2px 2px;
-  background: var(--c-accent);
-  pointer-events: none;
-  /* ancho = una pestaña − 24px (inset 12px/lado); left = 12 + i·(pestaña + gap). */
-  width: calc((100% - var(--space-2)) / 2 - 24px);
-  left: calc(12px + var(--tab-index) * ((100% - var(--space-2)) / 2 + var(--space-2)));
-  view-transition-name: play-tab-hoist;
-  transition: left var(--dur-slide) var(--ease-out); /* fallback sin VT */
-}
-
-/* Duración del morph del hoist en navegadores con VT (independiente del panel). */
-:global(::view-transition-group(play-tab-hoist)) {
-  animation-duration: var(--dur-slide);
-  animation-timing-function: var(--ease-out);
+  align-items: center;
+  /* reserva el recorrido vertical (±3px) para que el balancín no roce nada */
+  padding-block: var(--space-1);
 }
 
 .tab {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: var(--tap-min);
   padding: var(--space-2) var(--space-3);
-  border: var(--border-mid) solid transparent;
-  border-bottom-color: var(--c-border);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--c-surface-2);
+  border: var(--border-mid) solid var(--c-border);
+  border-radius: var(--radius-md);
   font-family: var(--font-display);
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
   color: var(--c-ink-3);
-  transition: color var(--dur-fast) var(--ease-standard),
-    background-color var(--dur-fast) var(--ease-standard);
+  transform: translateY(3px);
+  box-shadow: none;
+  transition: transform var(--dur-slide) var(--ease-out),
+    box-shadow var(--dur-slide) var(--ease-out),
+    background-color var(--dur-slide) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard);
 }
 
 .tab:hover {
   color: var(--c-ink-2);
 }
 
-/* Pestaña activa: contorno de tinta abierto hacia el panel, papel detrás. */
-.tabActive {
-  background: var(--c-surface);
-  border-color: var(--c-border);
-  border-bottom-color: transparent;
-  color: var(--c-ink);
+/* Activa: pegatina amarilla despegada. El :hover explícito evita que
+   .tab:hover pinte otro color sobre el amarillo. */
+.tabActive,
+.tabActive:hover {
+  background: var(--c-marker);
+  color: var(--c-on-marker);
   font-weight: var(--weight-display);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-sm);
 }
 
-/* ── View Transitions entre pestañas (§23.5) ──────────────────────────────────
-   Solo el PANEL cross-fadea (la carpeta detrás cambia con la solapa fija). El
-   nombre debe estar SIEMPRE presente para que se capturen ambas instantáneas. */
+/* ── View Transitions entre pestañas ───────────────────────────────────────
+   La navegación entre `/` y `/competitivo` corre dentro de startViewTransition
+   (react-router). Sin nombre propio, cada pestaña caería en el snapshot `root`
+   y el balancín en vivo quedaría ENMASCARADO por el cross-fade global. Se le da
+   a cada pestaña su propio nombre para que morfeen de forma independiente: la
+   activa sube y la inactiva baja, cada una interpolando su geometría (±3px) y
+   fundiendo su color — el balancín, ahora sí visible durante la transición. Los
+   nombres se asignan por posición (siempre son 2 pestañas fijas). */
+.tabs > a:first-of-type {
+  view-transition-name: play-tab-a;
+}
+.tabs > a:last-of-type {
+  view-transition-name: play-tab-b;
+}
+
+:global(::view-transition-group(play-tab-a)),
+:global(::view-transition-group(play-tab-b)) {
+  animation-duration: var(--dur-slide);
+  animation-timing-function: var(--ease-out);
+}
+
+/* El panel también cross-fadea (la carpeta detrás cambia con la solapa fija).
+   El nombre debe estar SIEMPRE presente para que se capturen ambas instantáneas. */
 .panelSlot {
   view-transition-name: play-panel;
 }
@@ -136,11 +140,19 @@
   animation-timing-function: var(--ease-standard);
 }
 
-/* Defensa reduced-motion: el navegador no anima ninguna transición de vista. */
+/* Defensa reduced-motion: el navegador no anima ninguna transición de vista
+   y el balancín de pestañas queda plano (el amarillo + la sombra ya marcan
+   el estado). */
 @media (prefers-reduced-motion: reduce) {
   :global(::view-transition-group(*)),
   :global(::view-transition-old(*)),
   :global(::view-transition-new(*)) {
     animation: none;
+  }
+
+  .tab,
+  .tabActive,
+  .tabActive:hover {
+    transform: none;
   }
 }

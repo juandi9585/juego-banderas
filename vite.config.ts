@@ -38,8 +38,8 @@ export default defineConfig({
         short_name: 'Banderas',
         description: 'Aprende las banderas y la cultura de los países del mundo.',
         lang: 'es',
-        theme_color: '#CDEF54', // Cartulina lima (rediseño neobrutalista)
-        background_color: '#CDEF54', // splash a juego con el fondo de app
+        theme_color: '#FAF1E2', // Crema (rediseño neobrutalista cálido)
+        background_color: '#FAF1E2', // splash a juego con el fondo de app
         display: 'standalone',
         start_url: '/',
         icons: [

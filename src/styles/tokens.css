@@ -15,55 +15,60 @@
    ========================================================================== */
 
 :root {
-  /* ---- Color · paleta con nombre (light, principal) --------------------- */
-  --c-bg: #CDEF54;              /* Cartulina — lima ácido, fondo de app */
-  --c-surface: #FFFEF6;         /* Papel — tarjetas, opciones, ledgers */
-  --c-surface-2: #EFF4CF;       /* superficie hundida / bandas de grupo */
-  --c-note: #FFD43D;            /* Sticker — amarillo de la ficha cultural */
+  /* ---- Color · paleta con nombre (light, principal) ---------------------
+     Referencia: neobrutalismo cálido sobre crema — pantallas crema, contornos
+     de tinta, AMARILLO como color interactivo (CTA y selección), ámbar para
+     lo decorativo, rojo y verde solo semánticos, celeste para la ficha. */
+  --c-bg: #FAF1E2;              /* Crema — fondo de app, papel cálido */
+  --c-surface: #FFFDF8;         /* Papel — tarjetas, opciones, ledgers */
+  --c-surface-2: #F1E6CF;       /* superficie hundida / bandas de grupo */
+  --c-note: #CDE9EF;            /* Celeste — ficha cultural / hoja de feedback */
 
   /* Marcador de selección: amarillo pleno en AMBOS modos (pestaña activa,
      thumb del segmented, chip elegido) con tinta negra fija encima. No
      confundir con --c-note, que se apaga en dark por ser superficie grande. */
-  --c-marker: #FFD43D;
-  --c-on-marker: #131505;
+  --c-marker: #FFD935;
+  --c-on-marker: #17150F;
 
-  --c-ink: #131505;             /* Tinta — texto primario Y todos los contornos */
-  --c-ink-2: #3D4128;           /* secundario */
-  --c-ink-3: #5C6142;           /* muted — captions, placeholders */
+  --c-ink: #17150F;             /* Tinta — texto primario Y todos los contornos */
+  --c-ink-2: #4A4438;           /* secundario */
+  --c-ink-3: #6E6656;           /* muted — captions, placeholders */
 
   /* En neobrutalismo el borde ES tinta: mismo negro para hairlines y contornos.
      El grosor (thin/mid/bold) es quien jerarquiza, no el color. */
-  --c-border: #131505;
-  --c-border-strong: #131505;
+  --c-border: #17150F;
+  --c-border-strong: #17150F;
 
-  /* Violeta (acento eléctrico; CTA y marcas de selección) */
-  --c-accent: #7A5AF8;          /* decorativo, barras de marca, progreso */
-  --c-accent-strong: #5B3DF5;   /* superficie de CTA (texto blanco, AA) */
-  --c-accent-tint: #E6DFFF;     /* fondos suaves / fila seleccionada */
-  --c-accent-ink: #4A2BD9;      /* texto violeta sobre claro (AA) */
-  --c-on-accent: #FFFFFF;
+  /* Ámbar/amarillo (el color interactivo del sistema) */
+  --c-accent: #F59E0B;          /* ámbar decorativo: barras de marca, progreso, ticks */
+  --c-accent-strong: #FFD935;   /* superficie de CTA (amarillo, texto tinta) */
+  --c-accent-tint: #FFF1BF;     /* fondos suaves / fila seleccionada */
+  --c-accent-ink: #92400E;      /* ámbar quemado: eyebrows, récords (AA sobre claro) */
+  --c-on-accent: #17150F;
 
-  /* Semánticos: rellenos planos saturados con tinta oscura encima */
-  --c-success: #1E9E52;         /* Verde sello */
-  --c-success-tint: #8EE6A9;
-  --c-success-ink: #0B4D26;
-  --c-error: #E03E2D;           /* Coral señal */
-  --c-error-tint: #FFA694;
-  --c-error-ink: #741204;
+  /* Semánticos: rellenos planos con tinta oscura encima */
+  --c-success: #3E9B4F;         /* Verde sello */
+  --c-success-tint: #C4E8C6;
+  --c-success-ink: #1B5226;
+  --c-error: #E23D45;           /* Rojo señal */
+  --c-error-tint: #F9C9C7;
+  --c-error-ink: #841016;
 
-  --c-focus: var(--c-accent-strong);
+  /* Foco en tinta: el trazo grueso + offset ya lo hace visible en todas partes. */
+  --c-focus: var(--c-ink);
 
   /* Interior de la tarjeta de bandera (blanco real => color de bandera fiel). */
   --c-flag-bg: #FFFFFF;
 
   /* Color de las sombras duras (tinta; en dark pasa a negro puro). */
-  --c-shadow: #131505;
+  --c-shadow: #17150F;
 
-  /* Retícula (atmósfera de cuaderno; background-image en cabeceras, nunca
-     sobre contenido denso ni sobre banderas). */
-  --graticule-line: rgba(19, 21, 5, 0.08);
-  --graticule: repeating-linear-gradient(0deg,  transparent 0 23px, var(--graticule-line) 23px 24px),
-               repeating-linear-gradient(90deg, transparent 0 23px, var(--graticule-line) 23px 24px);
+  /* Puntitos (atmósfera de la referencia; background-image en cabeceras con
+     background-size: var(--graticule-size), nunca sobre contenido denso ni
+     sobre banderas). */
+  --graticule-line: rgba(23, 21, 15, 0.16);
+  --graticule: radial-gradient(var(--graticule-line) 1.5px, transparent 1.6px);
+  --graticule-size: 22px 22px;
 
   /* ---- Tipografía ------------------------------------------------------- */
   --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', system-ui, sans-serif;
@@ -129,7 +134,7 @@
   --shadow-sm: 3px 3px 0 var(--c-shadow);
   --shadow-md: 5px 5px 0 var(--c-shadow);
   --shadow-lg: 9px 9px 0 var(--c-shadow);
-  --shadow-focus: 0 0 0 3px rgba(91, 61, 245, 0.35);
+  --shadow-focus: 0 0 0 3px rgba(23, 21, 15, 0.30);
   --shadow-thumb: 2px 2px 0 var(--c-shadow);  /* piezas pequeñas (thumb, chips) */
 
   /* ---- Motion ------------------------------------------------------------
@@ -166,7 +171,7 @@
   --flag-hero-max-h: clamp(150px, 30dvh, 220px);
 
   /* Bottom sheet (feedback tras responder) */
-  --scrim: rgba(19, 21, 5, 0.50);
+  --scrim: rgba(23, 21, 15, 0.50);
   --sheet-max-h: 88dvh;
   --sheet-radius: var(--radius-xl);
   --sheet-pad: var(--space-5);
@@ -176,9 +181,9 @@
 
   /* ---- Juice de UX (sonido/animación/siluetas) ---------------------------
      El barrido del "¡Nuevo récord!" deja de ser latón pulido y pasa a ser un
-     destello de rotulador fluor: núcleo casi blanco + banda amarillo sticker. */
+     destello de rotulador: núcleo casi blanco + banda ámbar. */
   --c-brass-glint: rgba(255, 255, 255, 0.85);
-  --c-brass-sheen: rgba(255, 212, 61, 0.55);
+  --c-brass-sheen: rgba(245, 158, 11, 0.45);
   --brass-sweep: linear-gradient(105deg,
     transparent 34%, var(--c-brass-sheen) 46%, var(--c-brass-glint) 50%,
     var(--c-brass-sheen) 54%, transparent 66%);
@@ -203,52 +208,52 @@
 
 /* ============================================================================
    Dark (secundario) — solo por media query. La tinta se invierte: contornos
-   crema sobre oliva profundo, sombras duras en negro puro (la superficie es
-   más clara que el fondo, así el bloque de sombra se lee). El interior de la
-   tarjeta de bandera sigue CLARO para que los colores de las banderas sean
-   fieles.
+   crema sobre carbón cálido, sombras duras en negro puro (la superficie es más
+   clara que el fondo, así el bloque de sombra se lee). El amarillo sigue siendo
+   el color interactivo; el interior de la tarjeta de bandera sigue CLARO para
+   que los colores de las banderas sean fieles.
    ========================================================================== */
 @media (prefers-color-scheme: dark) {
   :root {
-    --c-bg: #16180C;
-    --c-surface: #232816;
-    --c-surface-2: #1B1F0F;
-    --c-note: #34320F;            /* la ficha pierde el amarillo pleno en dark */
+    --c-bg: #1B1810;              /* carbón cálido — fondo de app */
+    --c-surface: #2A261A;         /* papel oscuro — tarjetas */
+    --c-surface-2: #14110B;       /* superficie hundida */
+    --c-note: #1E2E33;            /* celeste profundo — ficha / hoja de feedback */
 
-    --c-ink: #F2F5DC;
-    --c-ink-2: #C7CCA6;
-    --c-ink-3: #999F7C;
+    --c-ink: #F7F1E3;
+    --c-ink-2: #CBC3AF;
+    --c-ink-3: #9A9280;
 
-    --c-border: #F2F5DC;          /* contorno crema: la tinta invertida */
-    --c-border-strong: #F2F5DC;
+    --c-border: #F7F1E3;          /* contorno crema: la tinta invertida */
+    --c-border-strong: #F7F1E3;
 
-    --c-accent: #9D85FF;
-    --c-accent-strong: #8A6FFF;   /* CTA en dark: texto Tinta oscura encima */
-    --c-accent-tint: #322952;
-    --c-accent-ink: #BCAAFF;
-    --c-on-accent: #131505;
+    --c-accent: #FBBF24;          /* ámbar decorativo */
+    --c-accent-strong: #FFD935;   /* CTA amarillo, texto Tinta oscura encima */
+    --c-accent-tint: #3A3012;
+    --c-accent-ink: #FCD34D;
+    --c-on-accent: #17150F;
 
-    --c-success: #4ADE80;
-    --c-success-tint: #14371F;
-    --c-success-ink: #7FE3A4;
-    --c-error: #FF6B57;
-    --c-error-tint: #43150D;
-    --c-error-ink: #FFA694;
+    --c-success: #57C06A;
+    --c-success-tint: #17331D;
+    --c-success-ink: #98E0A2;
+    --c-error: #F26A6F;
+    --c-error-tint: #3E1315;
+    --c-error-ink: #F6B0B2;
 
     --c-flag-bg: #EEF2F5;
 
     --c-shadow: #000000;
 
-    --graticule-line: rgba(242, 245, 220, 0.06);
+    --graticule-line: rgba(247, 241, 227, 0.10);
 
     --scrim: rgba(0, 0, 0, 0.62);
 
-    --shadow-focus: 0 0 0 3px rgba(157, 133, 255, 0.45);
+    --shadow-focus: 0 0 0 3px rgba(255, 217, 53, 0.40);
 
-    /* Destello del récord sobre oliva profundo: mismo gesto, menos alfa. */
+    /* Destello del récord sobre carbón: mismo gesto, menos alfa. */
     --c-brass-glint: rgba(255, 245, 200, 0.65);
-    --c-brass-sheen: rgba(255, 212, 61, 0.35);
-    --glow-correct: rgba(74, 222, 128, 0.45);
+    --c-brass-sheen: rgba(251, 191, 36, 0.35);
+    --glow-correct: rgba(87, 192, 106, 0.45);
 
     color-scheme: dark;
   }
