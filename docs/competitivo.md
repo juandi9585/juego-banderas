@@ -153,8 +153,11 @@ velocidad da puntos.
   alternados al construir la ronda. No hace falta una función hermana.
 - Los **distractores** siempre salen del **pool de la categoría** (coherencia temática). Por eso la
   regla ≥ 8: incluso en la categoría más pequeña siempre hay 3 distractores distintos del correcto.
-- **Visión futura acordada:** una segunda variante competitiva **"escrito"** (solo `type-name`),
-  con sus propias tablas de ranking. No se implementa ahora.
+- **Visión futura acordada — [DECIDIDO 2026-07-07, ver docs/roadmap.md §A]:** una segunda variante
+  competitiva **"escrito"** (solo `type-name`), con **15 s por pregunta** (vs 10 s del mixto) y sus
+  propias tablas de ranking. No necesita `RoundMode` nuevo: la ronda es `mode: 'type-name'` +
+  `competitive.seed` → clave de récord `` `${cat}:type-name` ``, ya soportada. Pendiente solo de
+  implementación (recomendada como próxima iteración).
 
 ### 3.2 Identidad del ranking
 
@@ -292,17 +295,19 @@ implementa después; la Fase 1 deja lista la pieza barata que evita reescribir: 
 determinista** (`QuizConfig.competitive.seed` + PRNG `mulberry32`), con la que cada ronda
 competitiva es reproducible desde hoy. Boceto conceptual del resto:
 
-- **Backend:** Vercel Functions (serverless) + una base de datos (candidatos: Vercel Postgres,
-  Vercel KV / Upstash Redis). **Sin decidir.**
-- **Identidad de jugador:** apodo + `id` anónimo persistido en `localStorage` (UUID), o auth ligera
-  posterior. **Sin decidir.**
+- **Backend — [DECIDIDO 2026-07-07]: Supabase** (Postgres + auth + RLS; free tier). El submit
+  pasa por una Edge Function que revalida la partida. El front sigue en Vercel. Diseño completo
+  (esquema, módulo "Ranking" en el nav, offline-first): **docs/roadmap.md §C**.
+- **Identidad de jugador — [DECIDIDO 2026-07-07]: anónimo mejorable a cuenta.** Se entra con solo
+  un apodo (auth anónima de Supabase); si el jugador luego inicia sesión (Google/email), el
+  historial se conserva y lo sigue entre dispositivos.
 - **Anti-trampa (a nivel de concepto):** el motor es **determinista con RNG inyectable**. Un cliente
   puede enviar `{ seed, categoryId, mode, answers[] }`; el servidor **reconstruye la misma ronda**
   con esa `seed` y el mismo motor puro y **recomputa el score** (no confía en el `points` del
   cliente). La `seed` **ya existe desde la Fase 1** (`QuizConfig.competitive.seed`). Complementos:
   rate-limiting y validación de rangos.
-- **Qué NO se decide aún:** el stack de DB y el modelo de identidad de jugador. Esto queda
-  **explícitamente abierto** hasta que se aborde la Fase 2.
+- **Qué queda por afinar** (al implementar la Fase 2, ver roadmap §C): política de unicidad de
+  apodos (sufijo discriminador vs. unicidad estricta) y el tamaño del top (propuesto: 50).
 
 ---
 
