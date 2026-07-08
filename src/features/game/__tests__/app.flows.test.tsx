@@ -606,6 +606,60 @@ describe('Modo competitivo (récords locales)', () => {
     ).toBeInTheDocument();
     expect(within(row).queryByText('—')).toBeNull();
   });
+
+  it('modo escrito: 15 s por pregunta y récord independiente del mixto', () => {
+    window.history.pushState({}, '', '/competitivo');
+    render(<App />);
+
+    // Cambiar al modo escrito: el hint describe qué se juega y con cuánto tiempo.
+    fireEvent.click(screen.getByRole('button', { name: 'Escrito' }));
+    expect(screen.getByRole('button', { name: 'Escrito' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(
+      screen.getByText(/Escribe el nombre de cada país\. 15 segundos/),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('radio', { name: /Asia Meridional/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Comenzar' }));
+
+    const total = 9; // min(20, pool de 9)
+
+    // Q0: a los 10,2 s (donde el mixto ya habría expirado) la pregunta SIGUE
+    // viva — el límite del escrito es 15 s (timeLimitFor)…
+    act(() => {
+      vi.advanceTimersByTime(10_200);
+    });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    // …y al cruzar los 15 s cae el timeout.
+    act(() => {
+      vi.advanceTimersByTime(5_000);
+    });
+    expect(screen.getByRole('dialog')).toHaveAttribute(
+      'aria-label',
+      'Se acabó el tiempo',
+    );
+    advance(false);
+
+    // Q1..Q8: escribir el nombre correcto (el src de la bandera lo revela).
+    for (let i = 1; i < total; i++) {
+      const hero = screen.getByRole('img', { name: 'Bandera a identificar' });
+      const name = findCountry(codeFromImg(hero))!.name;
+      fireEvent.change(screen.getByLabelText('Nombre del país'), {
+        target: { value: name },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Comprobar' }));
+      advance(i === total - 1);
+    }
+
+    // Récord bajo '<cat>:type-name'; la clave del mixto no existe ni se toca.
+    expect(screen.getByText('¡Nuevo récord!')).toBeInTheDocument();
+    const stored = JSON.parse(localStorage.getItem('banderas:records:v1')!);
+    expect(stored['asia-meridional:type-name']).toBeDefined();
+    expect(stored['asia-meridional:type-name'].correct).toBe(8); // 8 de 9
+    expect(stored[RECORD_KEY]).toBeUndefined();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

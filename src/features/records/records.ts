@@ -7,8 +7,8 @@
 import type { CategoryId } from '../game/categories';
 import type { RoundMode } from '../game/types';
 
-// Clave de récord: categoría + modo de ronda (§3.2). Hoy siempre '<cat>:mixto';
-// la futura variante escrita añadiría '<cat>:type-name' sin migración.
+// Clave de récord: categoría + modo de ronda (§3.2). '<cat>:mixto' y
+// '<cat>:type-name' (escrito) conviven como claves independientes, sin migración.
 export type RecordKey = `${CategoryId}:${RoundMode}`;
 
 export interface RecordEntry {

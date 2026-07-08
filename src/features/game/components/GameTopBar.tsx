@@ -8,12 +8,14 @@ interface Props {
   /** Salir de la partida (vuelve a Home). */
   onExit: () => void;
   /**
-   * Solo en rondas COMPETITIVAS: la cuenta regresiva de 10 s se integra en la
-   * barra (§13). `questionKey` remonta el reloj por pregunta; `paused` lo
-   * detiene cuando la hoja está abierta.
+   * Solo en rondas COMPETITIVAS: la cuenta regresiva se integra en la barra
+   * (§13) con el límite del modo (`limitMs`: 10 s MC/mixto, 15 s escrito).
+   * `questionKey` remonta el reloj por pregunta; `paused` lo detiene cuando la
+   * hoja está abierta.
    */
   countdown?: {
     startedAt: number;
+    limitMs: number;
     paused: boolean;
     onTimeout: () => void;
     questionKey: string;
@@ -43,6 +45,7 @@ export function GameTopBar({ current, total, onExit, countdown }: Props) {
         <QuestionCountdown
           key={countdown.questionKey}
           startedAt={countdown.startedAt}
+          limitMs={countdown.limitMs}
           paused={countdown.paused}
           onTimeout={countdown.onTimeout}
         />

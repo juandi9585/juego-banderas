@@ -153,24 +153,26 @@ velocidad da puntos.
   alternados al construir la ronda. No hace falta una función hermana.
 - Los **distractores** siempre salen del **pool de la categoría** (coherencia temática). Por eso la
   regla ≥ 8: incluso en la categoría más pequeña siempre hay 3 distractores distintos del correcto.
-- **Visión futura acordada — [DECIDIDO 2026-07-07, ver docs/roadmap.md §A]:** una segunda variante
-  competitiva **"escrito"** (solo `type-name`), con **15 s por pregunta** (vs 10 s del mixto) y sus
-  propias tablas de ranking. No necesita `RoundMode` nuevo: la ronda es `mode: 'type-name'` +
-  `competitive.seed` → clave de récord `` `${cat}:type-name` ``, ya soportada. Pendiente solo de
-  implementación (recomendada como próxima iteración).
+- **Segunda variante "escrito" — [IMPLEMENTADA 2026-07-07, ver docs/roadmap.md §A]:** solo
+  `type-name`, con **15 s por pregunta** (vs 10 s del mixto) y sus propias tablas de ranking.
+  No necesitó `RoundMode` nuevo: la ronda es `mode: 'type-name'` + `competitive.seed` → clave de
+  récord `` `${cat}:type-name` ``. UI: `SegmentedControl` **Mixto | Escrito** en el panel
+  competitivo (la columna Récord lee el modo elegido); motor y puntaje: `timeLimitFor(mode)` /
+  `graceFor(mode)` en `score.ts` (gracia escrita 3 s — ajustable en playtest).
 
 ### 3.2 Identidad del ranking
 
-Por **(categoría, modo de ronda)**: la clave de récord es `` `${CategoryId}:${RoundMode}` ``. Hoy
-todas las tablas son `*:mixto`; la futura variante escrita añadiría `*:type-name` sin migración.
+Por **(categoría, modo de ronda)**: la clave de récord es `` `${CategoryId}:${RoundMode}` ``.
+Las tablas `*:mixto` y `*:type-name` (escrito) conviven como claves independientes, sin migración.
 
 ---
 
 ## 4. Puntuación — **[DECIDIDO 2026-07-06 con el usuario]**
 
 Sistema estilo Kahoot: **la velocidad da puntos reales** (un jugador rápido puede superar a otro
-con más aciertos), con **multiplicador de racha** y **límite duro de 10 s por pregunta en
-competitivo**. El puntaje se
+con más aciertos), con **multiplicador de racha** y **límite duro por pregunta en competitivo**
+según el modo: **10 s** en mixto/opción múltiple, **15 s** en escrito (`timeLimitFor(mode)`,
+2026-07-07). El puntaje se
 muestra **también en el casual** (informativo, sin ranking ni cronómetro visible).
 
 ### 4.1 Fórmula por pregunta
@@ -182,9 +184,12 @@ muestra **también en el casual** (informativo, sin ranking ni cronómetro visib
 
 - **Base:** `100` puntos por acierto.
 - **Bonus de velocidad `bonusVelocidad(t)`** (t = ms desde que la pregunta es visible hasta responder):
-  - `t ≤ 2 000 ms` → **50** (ventana de gracia: leer 4 opciones toma ~2 s; no premia el tap ciego).
-  - `2 000 < t < 10 000` → decae lineal: `50 × (10 000 − t) / 8 000`.
-  - `t ≥ 10 000 ms` → **0**.
+  - `t ≤ gracia` → **50** (leer 4 opciones toma ~2 s; no premia el tap ciego).
+  - `gracia < t < límite` → decae lineal: `50 × (límite − t) / (límite − gracia)`.
+  - `t ≥ límite` → **0**.
+  - Gracia y límite por modo (`graceFor` / `timeLimitFor`, 2026-07-07): mixto/MC **2 s / 10 s**;
+    escrito **3 s / 15 s** (teclear un nombre toma más que tocar una opción). El bonus máximo no
+    cambia → el techo de puntaje es el mismo en ambos modos.
 - **Multiplicador de racha `multRacha`:** con `racha` = aciertos consecutivos contando el actual,
   `multRacha = min(1 + 0.1 × (racha − 1), 1.5)` → ×1.0, ×1.1, ×1.2, ×1.3, ×1.4 y **×1.5 desde el
   6.º acierto seguido**. Un fallo o timeout reinicia la racha a 0.
@@ -211,10 +216,11 @@ consciente del usuario (adrenalina y remontadas por encima de jerarquía estrict
   el render no penaliza.
 - **Reloj de pared, sin pausas:** salir de la app a mitad de pregunta no congela el tiempo
   (antitrampa básica).
-- **Competitivo:** cuenta regresiva **visible** de 10 s; al agotarse se registra fallo automático
-  (`timedOut: true` en el `AnswerRecord`) y se avanza. Partida completa ≤ ~4–5 min.
+- **Competitivo:** cuenta regresiva **visible** con el límite del modo (10 s mixto, 15 s escrito);
+  al agotarse se registra fallo automático (`timedOut: true` en el `AnswerRecord`) y se avanza.
+  Partida completa ≤ ~4–5 min.
 - **Casual:** sin countdown ni timeout — se registra `elapsedMs` igual y aplica la misma fórmula
-  (con t ≥ 10 s el bonus simplemente es 0). El casual conserva su ritmo relajado.
+  (con t ≥ límite el bonus simplemente es 0). El casual conserva su ritmo relajado.
 
 ### 4.4 `computeScore` — función pura
 
@@ -222,10 +228,15 @@ consciente del usuario (adrenalina y remontadas por encima de jerarquía estrict
 // src/features/game/score.ts (nuevo). Constantes exportadas para tests y UI.
 export const SCORE_BASE = 100;
 export const SCORE_SPEED_BONUS_MAX = 50;
-export const SCORE_GRACE_MS = 2_000;
-export const SCORE_TIME_LIMIT_MS = 10_000;
+export const SCORE_GRACE_MS = 2_000;        // opción múltiple / mixto
+export const SCORE_TIME_LIMIT_MS = 10_000;  // opción múltiple / mixto
+export const SCORE_GRACE_TYPED_MS = 3_000;      // escrito (type-name)
+export const SCORE_TIME_LIMIT_TYPED_MS = 15_000; // escrito (type-name)
 export const SCORE_STREAK_STEP = 0.1;
 export const SCORE_STREAK_MAX_MULT = 1.5;
+// Únicas fuentes del límite/gracia por modo (countdown y speedBonus):
+export function timeLimitFor(mode: RoundMode): number; // 15 s escrito, 10 s resto
+export function graceFor(mode: RoundMode): number;     // 3 s escrito, 2 s resto
 
 export interface Score {
   points: number;      // suma de §4.1 (entero)

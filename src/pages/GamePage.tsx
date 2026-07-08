@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useGame } from '../features/game/useGame';
+import { timeLimitFor } from '../features/game/score';
 import { GameTopBar } from '../features/game/components/GameTopBar';
 import { FlagToNameQuestion } from '../features/game/components/FlagToNameQuestion';
 import { NameToFlagQuestion } from '../features/game/components/NameToFlagQuestion';
@@ -46,8 +47,9 @@ export function GamePage() {
 
   const isLast = state.currentIndex >= state.questions.length - 1;
   const sheetOpen = currentAnswer != null;
-  // Competitivo: countdown de 10 s por pregunta. Se detiene con la hoja abierta
-  // (pregunta respondida) y se remonta por pregunta (questionKey) reiniciándose.
+  // Competitivo: countdown por pregunta con el límite del modo (10 s mixto,
+  // 15 s escrito). Se detiene con la hoja abierta (pregunta respondida) y se
+  // remonta por pregunta (questionKey) reiniciándose.
   const isCompetitive = state.config?.competitive != null;
 
   function handleNext() {
@@ -74,9 +76,10 @@ export function GamePage() {
           total={progress.total}
           onExit={handleExit}
           countdown={
-            isCompetitive && state.questionStartedAt != null
+            isCompetitive && state.config != null && state.questionStartedAt != null
               ? {
                   startedAt: state.questionStartedAt,
+                  limitMs: timeLimitFor(state.config.mode),
                   paused: sheetOpen,
                   onTimeout: timeoutCurrent,
                   questionKey: currentQuestion.id,

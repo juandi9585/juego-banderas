@@ -1008,9 +1008,12 @@ Explorar"** (el enlace "Competir" desaparece: la pestaña lo reemplaza).
 ### 19.1 Escalabilidad prevista (huecos reservados, sin UI muerta)
 - **Leaderboard online (Fase 2)**: será un **módulo propio** — tercer enlace del nav ("Ranking")
   junto a Jugar y Explorar. No es una pestaña de Jugar: consultar clasificaciones no es "jugar".
-- **Variante competitiva "escrito"**: un `SegmentedControl` de modo (**Mixto | Escrito**) entre la
-  cabecera del panel competitivo y el ledger; la columna Récord lee entonces el `RoundMode` elegido
-  (la clave `${categoría}:${modo}` ya lo soporta sin migración).
+- **Variante competitiva "escrito" — OCUPADO (2026-07-07)**: el `SegmentedControl` de modo
+  (**Mixto | Escrito**) vive entre la cabecera del panel competitivo y el ledger, con un hint mono
+  de una línea que describe el modo elegido y sus segundos por pregunta (fuente única:
+  `timeLimitFor`). La columna Récord lee el `RoundMode` elegido (clave `${categoría}:${modo}`).
+  El subtítulo del panel pasó a "Elige modo y zona, y bate tu récord." (los segundos viven en el
+  hint, que cambia con el modo).
 
 ### 19.2 Masthead + pestañas de carpeta (`PlayPage`)
 - **Masthead compacto** (reemplaza al hero de la Home): retícula de fondo, eyebrow "Guía de campo ·

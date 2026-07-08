@@ -7,9 +7,14 @@
 
 ---
 
-## A. Modo competitivo "Escrito" — recomendado 1.º
+## A. Modo competitivo "Escrito" — recomendado 1.º · **[IMPLEMENTADO 2026-07-07]**
 
 Segunda variante del contrarreloj: **escribir a mano el nombre del país** de cada bandera.
+
+> **Estado:** en rama `dev`. Tal como se diseñó abajo: `timeLimitFor(mode)`/`graceFor(mode)` en
+> `score.ts` (15 s / gracia 3 s), countdown parametrizado, switch **Mixto | Escrito** en el hueco
+> reservado del panel y récords bajo `` `${cat}:type-name` ``. La gracia de 3 000 ms queda
+> **[A AFINAR]** solo si el playtest lo pide.
 
 ### Decisiones
 - **[DECIDIDO] 15 s por pregunta** (vs 10 s del mixto): teclear toma más que tocar una opción.

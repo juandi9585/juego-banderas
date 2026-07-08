@@ -207,6 +207,31 @@ describe('buildQuiz — modo mixto (competitivo)', () => {
   });
 });
 
+describe('buildQuiz — ronda escrita (competitivo, roadmap §A)', () => {
+  // El escrito NO es un RoundMode nuevo: es 'type-name' + semilla. El motor lo
+  // soporta por la rama no-mixto de buildQuiz; aquí se ancla ese contrato.
+  const escritoConfig: QuizConfig = {
+    mode: 'type-name',
+    categories: [],
+    questionCount: 8,
+    competitive: { seed: 42 },
+  };
+
+  it('todas las preguntas son type-name / text-input, sin opciones', () => {
+    const quiz = buildQuiz(mockCountries, escritoConfig, mulberry32(42));
+    expect(quiz).toHaveLength(8);
+    expect(quiz.every((q) => q.mode === 'type-name')).toBe(true);
+    expect(quiz.every((q) => q.kind === 'text-input')).toBe(true);
+    expect(quiz.every((q) => q.options === undefined)).toBe(true);
+  });
+
+  it('misma semilla → ronda IDÉNTICA (ids y orden)', () => {
+    const a = buildQuiz(mockCountries, escritoConfig, mulberry32(42));
+    const b = buildQuiz(mockCountries, escritoConfig, mulberry32(42));
+    expect(a.map((q) => q.id)).toEqual(b.map((q) => q.id));
+  });
+});
+
 describe('checkChoice', () => {
   it('true solo si el código elegido es el correcto', () => {
     const q = buildQuestion('flag-to-name', byCode('br'), mockCountries, seededRng(6));

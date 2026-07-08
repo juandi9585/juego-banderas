@@ -20,6 +20,14 @@
   max-width: 36ch;
 }
 
+/* Descripción de una línea del modo elegido (bajo el SegmentedControl). */
+.modeHint {
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--c-ink-3);
+}
+
 /* ── Ledger ──────────────────────────────────────────────────────────────── */
 .ledger {
   background: var(--c-surface);

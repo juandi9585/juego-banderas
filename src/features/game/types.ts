@@ -42,9 +42,9 @@ export type Country = {
 export type GameMode = 'flag-to-name' | 'name-to-flag' | 'type-name';
 
 // Modo de una RONDA. Además de los 3 modos por pregunta, el competitivo añade
-// 'mixto' (alterna los 2 de opción múltiple pregunta a pregunta). La variante
-// futura "escrito" (solo 'type-name') encaja aquí sin migrar (docs/competitivo
-// §3.1). `QuizQuestion.mode` sigue siendo un GameMode concreto (nunca 'mixto').
+// 'mixto' (alterna los 2 de opción múltiple pregunta a pregunta); su variante
+// "escrito" es directamente 'type-name' con semilla (docs/competitivo §3.1).
+// `QuizQuestion.mode` sigue siendo un GameMode concreto (nunca 'mixto').
 export type RoundMode = GameMode | 'mixto';
 
 // Filtro de selección SIMPLE por continente ('all' = todos). Hoy solo lo usa
@@ -52,14 +52,15 @@ export type RoundMode = GameMode | 'mixto';
 export type ContinentFilter = Continent | 'all';
 
 export interface QuizConfig {
-  mode: RoundMode; // competitivo v1: siempre 'mixto'
+  mode: RoundMode; // competitivo: 'mixto' o 'type-name' (escrito)
   // Ids canónicos del catálogo de categorías (orden del catálogo, sin
   // duplicados); [] = todas las categorías (pool completo).
   // COMPETITIVO: contiene EXACTAMENTE UNA categoría (invariante de su UI) —
   // `categories[0]` es la clave del récord (incluye 'mundo' sin canonicalizar).
   categories: CategoryId[];
   questionCount: number; // preset o total del pool filtrado ("todas")
-  // Presencia = ronda COMPETITIVA (countdown de 10 s, timeout, récord). La
+  // Presencia = ronda COMPETITIVA (countdown de timeLimitFor(mode), timeout,
+  // récord). La
   // semilla hace la ronda reproducible (mulberry32) — pieza de la validación
   // en servidor de la Fase 2 (docs/competitivo.md §5).
   competitive?: { seed: number };
@@ -87,7 +88,7 @@ export interface AnswerRecord {
   // en NEXT). Ausente si no había base temporal. Fuente del bonus de velocidad.
   elapsedMs?: number;
   // Competitivo (§4.3): la acción TIMEOUT del reducer lo marca cuando se agota
-  // el countdown de 10 s (fallo automático). En el casual no hay timeout, así
+  // el countdown del modo (fallo automático). En el casual no hay timeout, así
   // que allí queda ausente y la respuesta es un fallo por toque erróneo normal.
   timedOut?: boolean;
 }

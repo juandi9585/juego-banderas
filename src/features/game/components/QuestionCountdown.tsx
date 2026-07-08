@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { SCORE_TIME_LIMIT_MS, SCORE_TIME_WARN_MS } from '../score';
+import { SCORE_TIME_WARN_MS } from '../score';
 import styles from './GameTopBar.module.css';
 
 interface Props {
   /** Instante (reloj de pared) en que la pregunta quedó visible. */
   startedAt: number;
+  /** Límite del modo de la ronda (timeLimitFor): 10 s MC/mixto, 15 s escrito. */
+  limitMs: number;
   /** La hoja está abierta (pregunta ya respondida): el reloj se detiene. */
   paused: boolean;
-  /** Se llama UNA vez al agotarse los 10 s (fallo automático). */
+  /** Se llama UNA vez al agotarse el límite (fallo automático). */
   onTimeout: () => void;
 }
 
@@ -16,19 +18,19 @@ interface Props {
 // real (antitrampa, §4.3). 100 ms basta para una mecha fluida y dígitos crisp.
 const TICK_MS = 100;
 
-function remainingFrom(startedAt: number): number {
-  return Math.max(0, SCORE_TIME_LIMIT_MS - (Date.now() - startedAt));
+function remainingFrom(startedAt: number, limitMs: number): number {
+  return Math.max(0, limitMs - (Date.now() - startedAt));
 }
 
 /**
- * Cuenta regresiva de 10 s del competitivo (docs/design.md §13). Vive DENTRO del
+ * Cuenta regresiva del competitivo (docs/design.md §13). Vive DENTRO del
  * GameTopBar: una mecha a ras del borde inferior (se consume) + un slot mono
  * (glifo ◷ en calma, segundos en rojo los últimos 3 s). No roba altura ni
  * provoca layout shift. El padre lo remonta por pregunta (key), reiniciando el
  * reloj; cuando la hoja se abre (`paused`) el reloj se detiene.
  */
-export function QuestionCountdown({ startedAt, paused, onTimeout }: Props) {
-  const [remaining, setRemaining] = useState(() => remainingFrom(startedAt));
+export function QuestionCountdown({ startedAt, limitMs, paused, onTimeout }: Props) {
+  const [remaining, setRemaining] = useState(() => remainingFrom(startedAt, limitMs));
   const [announce, setAnnounce] = useState('');
   const firedRef = useRef(false); // timeout una sola vez
   const announcedRef = useRef(false); // aviso "quedan 3 s" una sola vez
@@ -38,7 +40,7 @@ export function QuestionCountdown({ startedAt, paused, onTimeout }: Props) {
     if (paused) return;
 
     function tick() {
-      const r = remainingFrom(startedAt);
+      const r = remainingFrom(startedAt, limitMs);
       setRemaining(r);
       if (r <= SCORE_TIME_WARN_MS && !announcedRef.current) {
         announcedRef.current = true;
@@ -53,11 +55,11 @@ export function QuestionCountdown({ startedAt, paused, onTimeout }: Props) {
     tick(); // cálculo inmediato al montar (sin esperar al primer intervalo)
     const id = setInterval(tick, TICK_MS);
     return () => clearInterval(id);
-  }, [startedAt, paused, onTimeout]);
+  }, [startedAt, limitMs, paused, onTimeout]);
 
   const isWarn = remaining <= SCORE_TIME_WARN_MS;
   const seconds = Math.ceil(remaining / 1000);
-  const fillPct = (remaining / SCORE_TIME_LIMIT_MS) * 100;
+  const fillPct = (remaining / limitMs) * 100;
 
   return (
     <>

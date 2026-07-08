@@ -2,10 +2,15 @@ import { describe, it, expect } from 'vitest';
 import {
   computeScore,
   speedBonus,
+  timeLimitFor,
+  graceFor,
   SCORE_SPEED_BONUS_MAX,
   SCORE_GRACE_MS,
+  SCORE_TIME_LIMIT_MS,
+  SCORE_GRACE_TYPED_MS,
+  SCORE_TIME_LIMIT_TYPED_MS,
 } from '../score';
-import type { AnswerRecord, GameResult, QuizConfig } from '../types';
+import type { AnswerRecord, GameResult, QuizConfig, RoundMode } from '../types';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tests del sistema de puntuación (docs/competitivo.md §4). Función pura: se le
@@ -28,10 +33,11 @@ function ans(correct: boolean, elapsedMs?: number): AnswerRecord {
 function makeResult(
   answers: Array<AnswerRecord | undefined>,
   durationMs?: number,
+  mode: RoundMode = config.mode,
 ): GameResult {
   const real = answers.filter((a): a is AnswerRecord => a != null);
   return {
-    config,
+    config: { ...config, mode },
     total: answers.length,
     correctCount: real.filter((a) => a.correct).length,
     answers: answers as AnswerRecord[],
@@ -60,6 +66,55 @@ describe('speedBonus (§4.1)', () => {
 
   it('es 0 cuando no hay medición de tiempo', () => {
     expect(speedBonus(undefined)).toBe(0);
+  });
+});
+
+describe('límites por modo — escrito 15 s (roadmap §A)', () => {
+  it('timeLimitFor: 10 s en opción múltiple y mixto, 15 s en escrito', () => {
+    expect(timeLimitFor('flag-to-name')).toBe(SCORE_TIME_LIMIT_MS);
+    expect(timeLimitFor('name-to-flag')).toBe(SCORE_TIME_LIMIT_MS);
+    expect(timeLimitFor('mixto')).toBe(SCORE_TIME_LIMIT_MS);
+    expect(timeLimitFor('type-name')).toBe(SCORE_TIME_LIMIT_TYPED_MS);
+    expect(SCORE_TIME_LIMIT_TYPED_MS).toBe(15_000);
+  });
+
+  it('graceFor: 2 s en opción múltiple y mixto, 3 s en escrito', () => {
+    expect(graceFor('mixto')).toBe(SCORE_GRACE_MS);
+    expect(graceFor('flag-to-name')).toBe(SCORE_GRACE_MS);
+    expect(graceFor('type-name')).toBe(SCORE_GRACE_TYPED_MS);
+    expect(SCORE_GRACE_TYPED_MS).toBe(3_000);
+  });
+
+  it('speedBonus escrito: gracia hasta 3 s y decaimiento lineal hasta 15 s', () => {
+    // 2 500 ms: fuera de la gracia MC (bonus parcial) pero DENTRO de la escrita.
+    expect(speedBonus(2500)).toBeLessThan(SCORE_SPEED_BONUS_MAX);
+    expect(speedBonus(2500, 'type-name')).toBe(SCORE_SPEED_BONUS_MAX);
+    expect(speedBonus(3000, 'type-name')).toBe(50); // borde exacto de la gracia
+    expect(speedBonus(9000, 'type-name')).toBe(25); // punto medio (3 s … 15 s)
+    expect(speedBonus(15000, 'type-name')).toBe(0); // límite duro
+    expect(speedBonus(12000, 'mixto')).toBe(0); // el mixto sigue muriendo a 10 s
+  });
+
+  it('computeScore puntúa con el límite del MODO de la ronda', () => {
+    // La misma respuesta de 12 s: en ronda escrita aún conserva bonus
+    // (50 × (15 000 − 12 000) / 12 000 = 12,5 → round(112,5) = 113); en ronda
+    // mixta el bonus ya es 0 desde los 10 s.
+    const answers = [ans(true, 12_000)];
+    expect(computeScore(makeResult(answers, undefined, 'mixto')).points).toBe(100);
+    expect(computeScore(makeResult(answers, undefined, 'type-name')).points).toBe(113);
+  });
+
+  it('partida escrita perfecta (20 aciertos ≤ 3 s) = 4 275, igual que el mixto', () => {
+    // A 2 500 ms por respuesta: gracia plena en escrito. El máximo teórico no
+    // cambia entre modos (mismo bonus tope), solo la ventana para lograrlo.
+    const s = computeScore(
+      makeResult(
+        Array.from({ length: 20 }, () => ans(true, 2500)),
+        undefined,
+        'type-name',
+      ),
+    );
+    expect(s.points).toBe(4275);
   });
 });
 
