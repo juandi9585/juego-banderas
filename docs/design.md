@@ -995,3 +995,74 @@ color nuevos.**
 - `ResultPage` / `ResultPage.module.css` — panel de récord (§15) cuando la ronda es competitiva.
 - `CategoryMultiPicker` — agrupación con subheads (§16), reutilizando chips de `ContinentPicker`.
 - `FieldNoteSheet` / su CSS — variante `.statusTimeout` (§17).
+
+---
+
+## 19. Iteración 4 — Módulo Jugar unificado (masthead, pestañas de carpeta y ledger)
+
+Reorganización pedida por el usuario (2026-07-07): **un solo módulo Jugar** dividido en Casual y
+Competitivo, competitivo compacto y menos saturación general. Rutas: `/` (pestaña Casual) y
+`/competitivo` (pestaña Competitivo) renderizan la misma `PlayPage`; el nav queda **"Jugar ·
+Explorar"** (el enlace "Competir" desaparece: la pestaña lo reemplaza).
+
+### 19.1 Escalabilidad prevista (huecos reservados, sin UI muerta)
+- **Leaderboard online (Fase 2)**: será un **módulo propio** — tercer enlace del nav ("Ranking")
+  junto a Jugar y Explorar. No es una pestaña de Jugar: consultar clasificaciones no es "jugar".
+- **Variante competitiva "escrito"**: un `SegmentedControl` de modo (**Mixto | Escrito**) entre la
+  cabecera del panel competitivo y el ledger; la columna Récord lee entonces el `RoundMode` elegido
+  (la clave `${categoría}:${modo}` ya lo soporta sin migración).
+
+### 19.2 Masthead + pestañas de carpeta (`PlayPage`)
+- **Masthead compacto** (reemplaza al hero de la Home): retícula de fondo, eyebrow "Guía de campo ·
+  {N} países", h1 "Banderas del mundo" y el **espécimen del día en miniatura** (FlagImage `sm`
+  `active`, 5rem, meta "{ISO} · {País}" con ellipsis) a la derecha. El hero grande y la tagline se
+  retiran: menos saturación, misma identidad.
+- **Pestañas de carpeta** (signature de la iteración): dos enlaces ("Casual" / "Competitivo") con
+  forma de pestaña de expediente — radios solo arriba, la activa **abre hacia el panel** (borde
+  inferior transparente) y lleva la **marca de hoist en latón en el canto superior**, inset 12px
+  por lado. Las inactivas reposan sobre la línea base capilar. Son `NavLink`s (aria-current
+  automático), no botones: la pestaña ES la ruta.
+
+### 19.3 Panel Casual (`CasualPanel`)
+El formulario de la Home original tal cual (Modo / Categorías / Preguntas / "Empezar"), sin hero.
+Cero cambios de lógica.
+
+### 19.4 Panel Competitivo (`CompetitivePanel`) — el libro de registro
+Las 18 zonas dejan de ser cards sueltos (72px c/u) y pasan a **un solo card-ledger** con filas de
+44px separadas por línea capilar — la página entera pierde ~500px de alto:
+
+```
+┌──────────────────────────────────────┐
+│ ZONA              PREGUNTAS   RÉCORD │  ← cabecera de columnas (mono 2xs, decorativa)
+│ ▍Mundo                   20    1.450 │  ← fila = label con radio oculto focusable
+│─ CONTINENTES ────────────────────────│  ← banda hundida (surface-2)
+│ ▍África                  20        — │
+│ …                                    │
+│─ SECTORES ───────────────────────────│
+│ ▍Caribe                  13      890 │
+└──────────────────────────────────────┘
+```
+
+- **Retícula compartida** cabecera/filas: `minmax(0,1fr) 4.5rem 4.5rem`, números en mono con
+  `tabular-nums` alineados a la derecha — lectura de libro de registro.
+- **El tick de hoist es el indicador de radio**: 4×18px inset vertical centrado (nunca toca
+  esquinas), neutro en reposo; al elegir pasa a latón, crece a 26px y la fila se tinta
+  (`--c-accent-tint`). Foco teclado: anillo interior (`inset 0 0 0 2px --c-focus`).
+- **Regla aprendida** (bug del card original): una barra decorativa pegada al borde de un contenedor
+  redondeado debe ir **inset** o el contenedor debe recortarla (`overflow: hidden`); si no, la barra
+  recta sobresale de la esquina curva. El ledger aplica ambas.
+- Récord por fila: **solo la cifra** (`toLocaleString('es-ES')`) en latón; vacío = "—" (ink-3) con
+  `aria-label="Aún sin récord"`. El copy largo "Récord {pts} pts" queda solo en ResultPage (§15).
+- Cabecera del panel: h2 **"Contrarreloj"** + "10 segundos por pregunta. Elige tu zona y bate tu
+  récord." CTA sticky "Comenzar" + helper igual que §14.
+
+### 19.5 Copys que cambian respecto a §18.3
+| Lugar | Copy |
+|-------|------|
+| Pestañas de Jugar | **"Casual"** · **"Competitivo"** (aria del nav de pestañas: "Tipo de partida") |
+| Nav global | **"Jugar"** (activo en `/` y `/competitivo`) · **"Explorar"** |
+| Ledger · cabecera de columnas | **"Zona" · "Preguntas" · "Récord"** |
+| Ledger · récord de fila | **"{pts}"** (solo cifra) / vacío **"—"** (aria: "Aún sin récord") |
+| Masthead · eyebrow | **"Guía de campo · {N} países"** |
+
+Sin tokens nuevos: pestañas y ledger reutilizan hoist, radios, capilares y la escala mono existente.

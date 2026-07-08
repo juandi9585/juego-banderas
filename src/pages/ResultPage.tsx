@@ -154,7 +154,9 @@ export function ResultPage() {
           variant="secondary"
           onClick={() => {
             reset();
-            navigate('/');
+            // Vuelve a la pestaña de la que salió la partida (casual o
+            // competitivo) dentro del módulo Jugar.
+            navigate(isCompetitive ? '/competitivo' : '/');
           }}
         >
           Cambiar modo

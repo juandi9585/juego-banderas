@@ -596,14 +596,15 @@ describe('Modo competitivo (récords locales)', () => {
     window.history.pushState({}, '', '/competitivo');
     render(<App />);
 
-    // La fila de Asia Meridional muestra el récord persistido (no "Aún sin récord").
-    expect(
-      screen.getByText(`Récord ${points.toLocaleString('es-ES')} pts`),
-    ).toBeInTheDocument();
+    // La fila de Asia Meridional muestra el récord persistido en su celda del
+    // ledger (la cifra en latón), no el "—" de "aún sin récord".
     const row = screen
       .getByRole('radio', { name: /Asia Meridional/ })
       .closest('label')!;
-    expect(within(row).queryByText('Aún sin récord')).toBeNull();
+    expect(
+      within(row).getByText(points.toLocaleString('es-ES')),
+    ).toBeInTheDocument();
+    expect(within(row).queryByText('—')).toBeNull();
   });
 });
 
@@ -628,8 +629,8 @@ describe('Casual: aislamiento del competitivo (sin countdown ni récords)', () =
     const user = userEvent.setup();
     render(<App />);
 
-    // Visitar Competir (sin empezar) y volver a Jugar (Home).
-    await user.click(screen.getByRole('link', { name: 'Competir' }));
+    // Visitar la pestaña Competitivo (sin empezar) y volver con el nav Jugar.
+    await user.click(screen.getByRole('link', { name: 'Competitivo' }));
     expect(
       screen.getByRole('heading', { name: 'Contrarreloj' }),
     ).toBeInTheDocument();

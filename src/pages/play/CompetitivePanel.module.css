@@ -1,0 +1,166 @@
+/* Panel Competitivo — libro de registro (docs/design.md §19.4). Un solo card
+   con filas de hairline: compacto y escaneable donde antes había 18 cards. El
+   hoist es el indicador de radio: un tick inset que nunca toca las esquinas
+   redondeadas (el card recorta con overflow hidden). */
+.panel {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-display);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-1);
+}
+
+.subtitle {
+  color: var(--c-ink-2);
+  font-size: var(--text-sm);
+  max-width: 36ch;
+}
+
+/* ── Ledger ──────────────────────────────────────────────────────────────── */
+.ledger {
+  background: var(--c-surface);
+  border: var(--border-thin) solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden; /* clipa ticks y fondos a la forma del card */
+}
+
+/* Línea capilar entre TODAS las filas (cabeceras incluidas). */
+.ledger > * + * {
+  border-top: var(--border-thin) solid var(--c-border);
+}
+
+/* Retícula compartida por cabecera de columnas y filas: zona elástica + dos
+   columnas numéricas fijas (así los números quedan en columna, como un libro
+   de registro). */
+.colHead,
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.5rem 4.5rem;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+}
+
+.colHead {
+  padding-block: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--c-ink-3);
+}
+
+.colNum {
+  text-align: right;
+}
+
+/* Subcabecera de grupo (Continentes / Sectores): banda hundida. */
+.groupRow {
+  padding: var(--space-1) var(--space-4);
+  background: var(--c-surface-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--c-ink-3);
+}
+
+/* Fila-zona: label que envuelve un radio oculto pero focusable. */
+.row {
+  position: relative;
+  min-height: var(--tap-min);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-standard);
+}
+
+.radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+/* Tick de hoist = indicador de radio: neutro en reposo, latón (y más alto) al
+   elegir. Inset vertical: jamás roza los bordes de la fila ni del card. */
+.row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  translate: 0 -50%;
+  width: var(--hoist-width);
+  height: 18px;
+  border-radius: 0 2px 2px 0;
+  background: var(--c-border-strong);
+  transition: background-color var(--dur-fast) var(--ease-standard),
+    height var(--dur-fast) var(--ease-standard);
+}
+
+.row:has(:checked) {
+  background: var(--c-accent-tint);
+}
+
+.row:has(:checked)::before {
+  background: var(--c-accent);
+  height: 26px;
+}
+
+.row:has(:focus-visible) {
+  box-shadow: inset 0 0 0 2px var(--c-focus);
+}
+
+.zone {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-snug);
+}
+
+.row:has(:checked) .zone {
+  font-weight: var(--weight-semibold);
+}
+
+.cellQ {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--c-ink-3);
+}
+
+.cellRecord {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--c-accent-ink); /* la cifra premiada, en latón */
+}
+
+.cellRecord.isEmpty {
+  color: var(--c-ink-3);
+}
+
+/* ── Barra CTA sticky al fondo, a sangre, con degradado de papel. ────────── */
+.startBar {
+  position: sticky;
+  bottom: 0;
+  margin-inline: calc(-1 * var(--space-4));
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--c-bg) 72%, transparent);
+}
+
+.startHint {
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--c-ink-3);
+  text-align: center;
+}

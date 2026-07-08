@@ -1,7 +1,12 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import styles from './AppHeader.module.css';
 
 export function AppHeader() {
+  // "Jugar" cubre el módulo entero: casual (/) y competitivo (/competitivo).
+  // Cuando exista el leaderboard, "Ranking" entra como tercer enlace (§19.1).
+  const { pathname } = useLocation();
+  const playActive = pathname === '/' || pathname === '/competitivo';
+
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
@@ -10,19 +15,9 @@ export function AppHeader() {
           <NavLink
             to="/"
             end
-            className={({ isActive }) =>
-              isActive ? `${styles.link} ${styles.active}` : styles.link
-            }
+            className={playActive ? `${styles.link} ${styles.active}` : styles.link}
           >
             Jugar
-          </NavLink>
-          <NavLink
-            to="/competitivo"
-            className={({ isActive }) =>
-              isActive ? `${styles.link} ${styles.active}` : styles.link
-            }
-          >
-            Competir
           </NavLink>
           <NavLink
             to="/explorar"

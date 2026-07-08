@@ -3,10 +3,9 @@ import { GameProvider } from './features/game/GameProvider';
 import { RecordsProvider } from './features/records/RecordsProvider';
 import { countries } from './data/dataset';
 import { AppHeader } from './components/AppHeader';
-import { HomePage } from './pages/HomePage';
+import { PlayPage } from './pages/play/PlayPage';
 import { GamePage } from './pages/GamePage';
 import { ResultPage } from './pages/ResultPage';
-import { CompetitivePage } from './pages/CompetitivePage';
 import { ExplorePage } from './pages/ExplorePage';
 import { CountryDetailPage } from './pages/CountryDetailPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -22,10 +21,10 @@ function AppContent() {
       {!isGame && <AppHeader />}
       <main className={isGame ? styles.mainGame : styles.main}>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<PlayPage tab="casual" />} />
           <Route path="/jugar" element={<GamePage />} />
           <Route path="/resultado" element={<ResultPage />} />
-          <Route path="/competitivo" element={<CompetitivePage />} />
+          <Route path="/competitivo" element={<PlayPage tab="competitivo" />} />
           <Route path="/explorar" element={<ExplorePage />} />
           <Route path="/explorar/:code" element={<CountryDetailPage />} />
           <Route path="*" element={<NotFoundPage />} />
