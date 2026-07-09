@@ -3,6 +3,10 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useGame } from '../features/game/useGame';
 import { computeScore } from '../features/game/score';
 import { useRecords } from '../features/records/useRecords';
+import { useOnline } from '../features/online/useOnline';
+import { resultToPayload } from '../features/online/payload';
+import { submitId } from '../features/online/queue';
+import type { SubmitOutcome } from '../features/online/types';
 import { play } from '../lib/sound';
 import type { RecordEntry } from '../features/records/records';
 import { FlagImage } from '../components/FlagImage';
@@ -15,6 +19,7 @@ const fmt = (n: number) => n.toLocaleString('es-ES');
 export function ResultPage() {
   const { state, result, restart, reset } = useGame();
   const records = useRecords();
+  const online = useOnline();
   const navigate = useNavigate();
 
   // Al llegar desde el CTA "Ver resultado", el foco aterriza en el titular.
@@ -65,6 +70,32 @@ export function ResultPage() {
     // Va dentro de la guarda submittedRef → no se duplica con StrictMode.
     if (isNew) play('record');
   }, [result, isCompetitive, score, records]);
+
+  // ── Publicación online (Fase C, roadmap §C) ────────────────────────────────
+  // Adicional y ASÍNCRONA: no toca el flujo local. Con env vars ausentes es
+  // no-op ({kind:'disabled'}). Guarda de ref anti doble-submit de StrictMode.
+  const onlinePayload = useMemo(
+    () => (result ? resultToPayload(result) : null),
+    [result],
+  );
+  const onlineId = onlinePayload ? submitId(onlinePayload) : null;
+  const onlineSubmittedRef = useRef(false);
+  const [onlineOutcome, setOnlineOutcome] = useState<SubmitOutcome | null>(null);
+
+  useEffect(() => {
+    if (!result || !isCompetitive || onlineSubmittedRef.current) return;
+    onlineSubmittedRef.current = true;
+    void online.submitResult(result).then(setOnlineOutcome);
+  }, [result, isCompetitive, online]);
+
+  // Si la cola publica esta ronda más tarde (p. ej. tras crear el apodo), refleja
+  // el puesto sin re-enviar (la Edge Function es autoritativa: manda el servidor).
+  useEffect(() => {
+    if (!onlineId) return;
+    return online.subscribeOutcome(onlineId, (res) =>
+      setOnlineOutcome({ kind: 'ok', data: res }),
+    );
+  }, [onlineId, online]);
 
   if (!result || !score) {
     return <Navigate to="/" replace />;
@@ -125,6 +156,44 @@ export function ResultPage() {
           <p className={styles.recordToBeat}>Récord {fmt(recordResult.prev.points)} pts</p>
         )}
       </section>
+
+      {/* Resultado online, discreto. La región vive montada (isCompetitive) para
+          que el anuncio a lectores dispare cuando la respuesta asíncrona llega;
+          vacía cuando no hay nada que decir (offline/casual → sin caja). */}
+      {isCompetitive && (
+        <div className={styles.online} aria-live="polite">
+          {onlineOutcome?.kind === 'ok' && (
+            <>
+              {onlineOutcome.data.newRecord && (
+                <p className={styles.onlineRecord}>¡Récord online!</p>
+              )}
+              {onlineOutcome.data.puesto != null && (
+                <p className={styles.onlineRank}>
+                  Puesto #{onlineOutcome.data.puesto}
+                  {onlineOutcome.data.totalJugadores != null
+                    ? ` de ${fmt(onlineOutcome.data.totalJugadores)}`
+                    : ''}
+                </p>
+              )}
+            </>
+          )}
+          {onlineOutcome?.kind === 'needs-profile' && (
+            <>
+              <p className={styles.onlineNote}>
+                Crea un apodo para publicar tu marca en el ranking.
+              </p>
+              <Button variant="secondary" onClick={online.openOnboarding}>
+                Publicar en el ranking
+              </Button>
+            </>
+          )}
+          {onlineOutcome?.kind === 'queued' && (
+            <p className={styles.onlineNote}>
+              Sin conexión. Tu marca se publicará cuando vuelvas a tenerla.
+            </p>
+          )}
+        </div>
+      )}
 
       {failed.length > 0 && (
         <section aria-label="Países para repasar">

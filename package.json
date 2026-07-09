@@ -19,6 +19,7 @@
     "@fontsource-variable/bricolage-grotesque": "^5.2.10",
     "@fontsource-variable/hanken-grotesk": "^5.2.8",
     "@fontsource-variable/spline-sans-mono": "^5.2.8",
+    "@supabase/supabase-js": "^2.110.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^6.30.4"

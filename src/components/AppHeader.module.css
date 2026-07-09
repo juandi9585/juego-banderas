@@ -58,6 +58,19 @@
   color: var(--c-ink);
 }
 
+/* Con el tercer enlace (Ranking, §19.1) los pills a paso pleno + sonido ya no
+   caben a 360px (desbordaban 23px): paso compacto y wordmark a 14px, que
+   recupera su lockup de dos líneas. */
+@media (max-width: 400px) {
+  .wordmark {
+    font-size: var(--text-sm);
+  }
+
+  .link {
+    padding-inline: var(--space-2);
+  }
+}
+
 /* Pestaña activa: pegatina amarilla con contorno de tinta. El :hover explícito
    evita que .link:hover (más específico) pinte tinta clara sobre el amarillo
    en dark. */

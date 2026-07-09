@@ -4,7 +4,7 @@ import styles from './AppHeader.module.css';
 
 export function AppHeader() {
   // "Jugar" cubre el módulo entero: casual (/) y competitivo (/competitivo).
-  // Cuando exista el leaderboard, "Ranking" entra como tercer enlace (§19.1).
+  // "Ranking" es el tercer enlace (§19.1): consultar clasificaciones no es jugar.
   const { pathname } = useLocation();
   const playActive = pathname === '/' || pathname === '/competitivo';
 
@@ -19,6 +19,14 @@ export function AppHeader() {
             className={playActive ? `${styles.link} ${styles.active}` : styles.link}
           >
             Jugar
+          </NavLink>
+          <NavLink
+            to="/ranking"
+            className={({ isActive }) =>
+              isActive ? `${styles.link} ${styles.active}` : styles.link
+            }
+          >
+            Ranking
           </NavLink>
           <NavLink
             to="/explorar"

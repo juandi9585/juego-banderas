@@ -202,6 +202,39 @@
   color: var(--c-ink-3);
 }
 
+/* ── Resultado online (Fase C) ─────────────────────────────────────────────
+   Discreto, centrado bajo el panel de puntaje. Vacío mientras no hay respuesta
+   (o en offline): :empty lo saca del flujo del grid para no dejar un hueco. */
+.online {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  text-align: center;
+}
+
+.online:empty {
+  display: none;
+}
+
+.onlineRecord {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-display);
+  color: var(--c-accent-ink);
+}
+
+.onlineRank {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-ink-2);
+}
+
+.onlineNote {
+  font-size: var(--text-sm);
+  color: var(--c-ink-2);
+}
+
 .actions {
   display: grid;
   gap: var(--space-3);

@@ -4,6 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ResultPage } from '../../../pages/ResultPage';
 import { RecordsContext, type RecordsContextValue } from '../RecordsContext';
+import { OnlineContext, type OnlineContextValue } from '../../online/OnlineContext';
 import { isBetter, type RecordEntry } from '../records';
 import { GameContext } from '../../game/GameContext';
 import { computeScore } from '../../game/score';
@@ -93,6 +94,25 @@ function makeRecordsSpy() {
   return { value, submit, getBest };
 }
 
+/** OnlineContextValue apagado: la publicación online es no-op (kind:'disabled')
+ * y no interfiere con las aserciones del récord local. */
+function makeOnlineValue(): OnlineContextValue {
+  return {
+    enabled: false,
+    loading: false,
+    profile: null,
+    isAnonymous: false,
+    submitResult: vi.fn(async () => ({ kind: 'disabled' as const })),
+    createProfile: vi.fn(async () => ({ ok: true })),
+    linkGoogle: vi.fn(async () => ({ ok: true })),
+    signInGoogle: vi.fn(async () => ({ ok: true })),
+    onboardingOpen: false,
+    openOnboarding: vi.fn(),
+    closeOnboarding: vi.fn(),
+    subscribeOutcome: vi.fn(() => () => {}),
+  };
+}
+
 /** GameContextValue mínimo alrededor de un resultado ya calculado. */
 function makeGameValue(state: GameState, result: GameResult): GameContextValue {
   return {
@@ -120,9 +140,11 @@ describe('ResultPage competitiva bajo StrictMode', () => {
       <StrictMode>
         <MemoryRouter initialEntries={['/resultado']}>
           <RecordsContext.Provider value={records.value}>
-            <GameContext.Provider value={game}>
-              <ResultPage />
-            </GameContext.Provider>
+            <OnlineContext.Provider value={makeOnlineValue()}>
+              <GameContext.Provider value={game}>
+                <ResultPage />
+              </GameContext.Provider>
+            </OnlineContext.Provider>
           </RecordsContext.Provider>
         </MemoryRouter>
       </StrictMode>,

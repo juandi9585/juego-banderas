@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { FactCard } from '../../../components/FactCard';
 import { Button } from '../../../components/Button';
 import { sample } from '../../../lib/random';
+import { useFocusTrap } from '../../../lib/useFocusTrap';
 import type { AnswerRecord, QuizQuestion } from '../types';
 import styles from './FieldNoteSheet.module.css';
 
@@ -68,44 +69,8 @@ export function FieldNoteSheet({ question, answer, isLast, onNext }: Props) {
     statusRef.current?.focus();
   }, []);
 
-  // Focus trap + Esc = avanzar (§10.3/§10.4).
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        requestClose();
-        return;
-      }
-      if (e.key !== 'Tab') return;
-
-      const sheet = sheetRef.current;
-      if (!sheet) return;
-      const focusables = Array.from(
-        sheet.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-        ),
-      );
-      if (focusables.length === 0) {
-        e.preventDefault();
-        return;
-      }
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      const active = document.activeElement;
-
-      if (e.shiftKey) {
-        if (active === first || !sheet.contains(active)) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else if (active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [requestClose]);
+  // Focus trap + Esc = avanzar (§10.3/§10.4), vía el hook compartido de modales.
+  useFocusTrap(sheetRef, requestClose);
 
   // Respaldo: si `animationend` no llegara, avanza igual pasada la bajada.
   useEffect(() => {

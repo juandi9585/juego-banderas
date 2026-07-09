@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { GameProvider } from './features/game/GameProvider';
 import { RecordsProvider } from './features/records/RecordsProvider';
+import { OnlineProvider } from './features/online/OnlineProvider';
 import { countries } from './data/dataset';
 import { AppHeader } from './components/AppHeader';
 import { PlayPage } from './pages/play/PlayPage';
 import { GamePage } from './pages/GamePage';
 import { ResultPage } from './pages/ResultPage';
 import { ExplorePage } from './pages/ExplorePage';
+import { RankingPage } from './pages/RankingPage';
 import { CountryDetailPage } from './pages/CountryDetailPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import styles from './App.module.css';
@@ -25,6 +27,7 @@ function AppContent() {
           <Route path="/jugar" element={<GamePage />} />
           <Route path="/resultado" element={<ResultPage />} />
           <Route path="/competitivo" element={<PlayPage tab="competitivo" />} />
+          <Route path="/ranking" element={<RankingPage />} />
           <Route path="/explorar" element={<ExplorePage />} />
           <Route path="/explorar/:code" element={<CountryDetailPage />} />
           <Route path="*" element={<NotFoundPage />} />
@@ -37,12 +40,16 @@ function AppContent() {
 export default function App() {
   return (
     <BrowserRouter>
-      {/* RecordsProvider envuelve por fuera: es independiente del motor de juego
-          (docs/competitivo.md §5); la ResultPage le entrega el puntaje ya hecho. */}
+      {/* RecordsProvider (récords locales) y OnlineProvider (ranking) envuelven por
+          fuera: ambos son independientes del motor de juego (docs/competitivo.md §5,
+          roadmap §C). La ResultPage les entrega el resultado ya hecho; lo online es
+          adicional y asíncrono, y se apaga con gracia si faltan las env vars. */}
       <RecordsProvider>
-        <GameProvider countries={countries}>
-          <AppContent />
-        </GameProvider>
+        <OnlineProvider>
+          <GameProvider countries={countries}>
+            <AppContent />
+          </GameProvider>
+        </OnlineProvider>
       </RecordsProvider>
     </BrowserRouter>
   );
