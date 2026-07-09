@@ -1,110 +1,13 @@
-# Roadmap — próximas iteraciones
+# Roadmap — trabajo pendiente
 
-> Decidido con el usuario el **2026-07-07**. Tres frentes sin orden impuesto por el usuario;
-> el orden de abajo es el **recomendado** y su porqué está al final. Las decisiones marcadas
-> **[DECIDIDO]** están cerradas; lo marcado **[A AFINAR]** se ajusta al implementar (playtest),
-> sin volver a consultar salvo que cambie el espíritu de lo acordado.
-
----
-
-## A. Modo competitivo "Escrito" — recomendado 1.º · **[IMPLEMENTADO 2026-07-07]**
-
-Segunda variante del contrarreloj: **escribir a mano el nombre del país** de cada bandera.
-
-> **Estado:** en rama `dev`. Tal como se diseñó abajo: `timeLimitFor(mode)`/`graceFor(mode)` en
-> `score.ts` (15 s / gracia 3 s), countdown parametrizado, switch **Mixto | Escrito** en el hueco
-> reservado del panel y récords bajo `` `${cat}:type-name` ``. La gracia de 3 000 ms queda
-> **[A AFINAR]** solo si el playtest lo pide.
-
-### Decisiones
-- **[DECIDIDO] 15 s por pregunta** (vs 10 s del mixto): teclear toma más que tocar una opción.
-- **[DECIDIDO]** Ranking **separado** del mixto: la clave `${categoría}:${modo}` ya lo soporta.
-- **No necesita `RoundMode` nuevo**: la ronda escrita es `mode: 'type-name'` (GameMode existente)
-  con `competitive: { seed }`. Clave de récord resultante: `` `${cat}:type-name` `` — exactamente
-  la prevista en `records.ts` desde la Fase 1. Cero migración.
-
-### Diseño de la solución
-- **Motor**: intacto. `buildQuiz` ya genera rondas `type-name`; la tolerancia de respuesta
-  (tildes/mayúsculas/espacios/alias, `checkTypedAnswer`) se hereda del casual tal cual.
-- **Tiempo por modo**: `SCORE_TIME_LIMIT_MS` deja de ser EL límite y pasa a ser el del mixto.
-  Helper `timeLimitFor(mode)` en `score.ts`: mixto/MC → 10 000, `type-name` → 15 000. Lo consumen
-  el `QuestionCountdown`, la acción TIMEOUT y `speedBonus` (el bonus decae hasta el límite del
-  modo). **[A AFINAR]** ventana de gracia del escrito: propuesta 3 000 ms (vs 2 000 del mixto) —
-  con 2 s nadie llega al bonus pleno tecleando. Máximo teórico se mantiene (4 275 en 20).
-- **UI competitiva**: entra el `SegmentedControl` **Mixto | Escrito** en el hueco reservado del
-  panel (design.md §19.1) entre cabecera y ledger; la columna Récord del ledger lee el modo
-  seleccionado. El countdown y la hoja de timeout ya existen; en `/jugar` el teclado móvil convive
-  con la bandera héroe elástica (§11), que ya cede altura.
-- **Tests**: timeLimitFor por modo; ronda escrita con semilla determinista; récord bajo
-  `cat:type-name` independiente del `cat:mixto`; timeout a los 15 s (no 10).
-
-### Alcance
-Pequeño y 100% frontend. Sin dependencias nuevas. Es la pieza que conviene cerrar **antes** del
-online, para que el esquema de la base de datos y el switch del leaderboard nazcan completos.
+> Este documento rastrea **solo lo que falta**. Lo ya entregado no se registra
+> aquí como "hecho": su spec viva está en `design.md` + `docs/competitivo.md` y
+> su implementación, en el código. Piezas anteriores del roadmap (modo **Escrito**
+> y **Juice** de UX — sonido, animación y siluetas) ya están en producción.
 
 ---
 
-## B. "Juice" de UX: animación, sonido y siluetas — recomendado 2.º · **[IMPLEMENTADO 2026-07-07]**
-
-Darle sensación de juego sin romper la sobriedad de la guía de campo. Tres piezas independientes
-(se pueden hacer en cualquier orden interno o en paralelo).
-
-> **Estado:** en rama `dev`. Spec de diseño en design.md §20–§25. B.1: 6 WAVs sintetizados por
-> `scripts/generate-sounds.mjs` (55 KB, afinados a La 440; el hito de racha sustituye al acierto
-> cuando sube el multiplicador), módulo `src/lib/sound.ts` + toggle de mute en AppHeader y
-> GameTopBar. B.2: pop de racha, halo de acierto, pulso de mecha en warn, barrido de latón en el
-> banner de récord y View Transitions del panel Jugar — todo con salida en reduced-motion.
-> B.3: `scripts/generate-shapes.mjs` (Natural Earth 110m + 50m) → 18 zonas precacheadas (24 KB)
-> y 194 países fuera del precache con caché de runtime; integradas en el ledger competitivo y la
-> ficha de Explorar. **Recortes de la spec (§24.2):** chips del casual SIN silueta (a 16 px son
-> manchas) y lista de Explorar sin silueta (rompería el presupuesto de datos); revisitables si el
-> playtest lo pide.
-
-### B.1 Sonido — **[DECIDIDO] ON por defecto + mute persistente**
-- **Assets locales pequeños** (ogg/mp3, ~2-6 KB cada uno, presupuesto total **≤ 60 KB**,
-  precacheados por la PWA → offline). Paleta corta de eventos:
-  acierto · fallo · timeout · tick de urgencia (últimos 3 s del countdown) · récord · hito de racha.
-- **Mute**: toggle visible (GameTopBar y/o masthead), persistido en localStorage
-  (`banderas:sound`). El estado se respeta en toda la app.
-- **iOS/Safari**: el `AudioContext` se desbloquea con el primer gesto del usuario (el tap de
-  "Empezar"/"Comenzar" sirve). Sin sonido en autoplay antes de eso — restricción de plataforma.
-- Implementación: módulo `src/lib/sound.ts` (precarga + `play(id)` + mute), sin librerías.
-
-### B.2 Animación
-Momentos con jugo, siempre con salida digna en `prefers-reduced-motion` (ya hay convención):
-- **Respuesta**: el "asentado" del acierto ya existe (`--ease-spring`); añadir pop del contador de
-  racha y micro-flash de la fila/opción correcta.
-- **Countdown**: pulso sutil de la mecha en los últimos 3 s (hoy solo cambia a rojo).
-- **Récord**: barrido de **brillo de latón** one-shot sobre el banner (nada de confeti — la
-  identidad es latón, no fiesta).
-- **Transiciones** entre pestañas/rutas del módulo Jugar: View Transitions API como mejora
-  progresiva (fallback: corte seco actual).
-
-### B.3 Siluetas de mapa — **[DECIDIDO] en ledger competitivo, chips del casual y Explorar**
-- **Generación por script** (data-curator): desde **Natural Earth 1:110m** (dominio público) se
-  derivan SVGs simplificados — 18 siluetas de zona (unión de sus países) + siluetas por país para
-  Explorar. Script en `scripts/`, salida en `public/shapes/`; **nunca a mano**.
-- **Presupuesto de datos [DECIDIDO: prioridad del usuario]** — evitar consumo en móviles:
-  - Son **iconos** (24–48 px): simplificación agresiva (Douglas-Peucker, sin islas menores).
-    Objetivo: **≤ 1,5 KB por SVG**.
-  - **Zonas (18 + 7 continentes ≈ 25 SVGs, ~40 KB)**: al precache de la PWA (ledger y chips los
-    usan siempre). Presupuesto: **≤ 60 KB añadidos al precache**.
-  - **Países (194 SVGs para Explorar)**: **NO van al precache** — carga perezosa al abrir la ficha
-    y quedan en caché de runtime del service worker (patrón cache-first). El usuario solo descarga
-    los países que visita, una vez.
-  - Clave para usuarios recurrentes: el precache de la PWA se descarga **una vez por versión**; las
-    visitas siguientes sirven todo desde el service worker, consumo ≈ 0.
-- Uso visual: silueta en tinta al 60-70% (`--c-ink-2/3`) junto al nombre; en fila seleccionada del
-  ledger, silueta en latón. En chips del casual **probar primero** (17 chips: si satura, se recorta
-  a solo ledger + Explorar — el usuario ya avisó que ahí puede sobrar).
-
-### Alcance
-Mediano, 100% frontend + un script de datos. La dirección visual/motion la fija **ui-designer**
-(skill frontend-design) al implementar; este roadmap fija alcance y presupuestos.
-
----
-
-## C. Sistema competitivo online: Ranking + usuarios + DB — recomendado 3.º
+## C. Sistema competitivo online: Ranking + usuarios + DB
 
 El cambio grande. Convierte los récords locales en un leaderboard real.
 
@@ -141,17 +44,5 @@ El cambio grande. Convierte los récords locales en un leaderboard real.
 
 ### Alcance
 Grande: backend nuevo (Supabase + Edge Function), compartir el motor con el servidor, módulo de UI
-nuevo, onboarding de apodo y estados offline. Prelado por A (para nacer con los dos modos) y
-idealmente por B (pulir antes de "salir al público").
-
----
-
-## Orden recomendado y porqué
-
-1. **A — Escrito**: chico, sin dependencias, y deja el catálogo de modos **completo** antes de
-   diseñar la DB y el switch del Ranking (evita migraciones y UIs a medias).
-2. **B — Juice**: mediano y paralelizable; el juego se siente terminado y "compartible" justo
-   antes de estrenar la parte social.
-3. **C — Online**: el grande al final, sobre modos ya cerrados y una experiencia ya pulida.
-   Todo su prerequisito técnico barato (semilla determinista, motor puro, `duration_ms` honesto)
-   quedó listo en la Fase 1.
+nuevo, onboarding de apodo y estados offline. Todo su prerequisito técnico barato (semilla
+determinista, motor puro, `duration_ms` honesto) ya quedó listo en la Fase 1.
