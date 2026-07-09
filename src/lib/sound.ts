@@ -109,6 +109,10 @@ export function setMuted(next: boolean): void {
     // localStorage no disponible: el estado en memoria sigue siendo válido.
   }
   if (masterGain) masterGain.gain.value = next ? 0 : 1;
+  // Al ENCENDER el sonido, carga perezosa de los WAV que se saltó el desbloqueo
+  // si arrancó muteado (idempotente por loadStarted). El toggle es un gesto de
+  // usuario ⇒ el AudioContext puede crearse/reanudarse.
+  if (!next) loadBuffers();
   listeners.forEach((l) => l(muted));
 }
 
@@ -129,7 +133,9 @@ export function subscribeMuted(listener: (muted: boolean) => void): () => void {
 function unlock(): void {
   const context = ensureContext();
   if (context && context.state === 'suspended') void context.resume().catch(() => {});
-  loadBuffers();
+  // Muteado al arrancar ⇒ no gastar los ~55 KB de WAV. Se cargarán en cuanto el
+  // usuario encienda el sonido (setMuted(false)).
+  if (!muted) loadBuffers();
 }
 
 function installUnlock(): void {
