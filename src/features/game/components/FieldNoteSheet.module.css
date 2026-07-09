@@ -14,6 +14,11 @@
   }
 }
 
+/* Salida: el scrim se desvanece mientras la hoja baja (clase `exiting`). */
+.scrim.exiting {
+  animation: scrimOut var(--dur) var(--ease-out) forwards;
+}
+
 /* Hoja de feedback: pegatina amarilla anclada abajo, contorno de tinta bold
    por arriba y los lados, esquinas superiores redondeadas y barra-marcador
    violeta a la izquierda. Sube con un pequeño rebote (overshoot y asentado). */
@@ -38,6 +43,12 @@
   padding-bottom: max(var(--sheet-pad), env(safe-area-inset-bottom));
   overflow: hidden;
   animation: sheetIn var(--dur-slow) var(--ease-out);
+}
+
+/* Salida: la hoja baja fuera de vista antes de desmontarse (§10). El componente
+   dispara el avance real al terminar esta animación (o por timeout de respaldo). */
+.sheet.exiting {
+  animation: sheetOut var(--dur) var(--ease-standard) forwards;
 }
 
 /* Barra-marcador violeta — SIEMPRE, acierto y error. */
@@ -133,6 +144,25 @@
   }
   to {
     transform: translateY(0);
+  }
+}
+
+/* Bajada de salida: sin rebote, se va limpia por abajo. */
+@keyframes sheetOut {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes scrimOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 

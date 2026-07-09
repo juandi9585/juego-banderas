@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FactCard } from '../../../components/FactCard';
 import { Button } from '../../../components/Button';
 import { sample } from '../../../lib/random';
@@ -35,8 +35,32 @@ export function FieldNoteSheet({ question, answer, isLast, onNext }: Props) {
   // padre), así el inicializador corre una sola vez y varía entre partidas.
   const [shownFacts] = useState(() => sample(country.facts, FACTS_PER_ANSWER));
 
+  // Salida animada: al cerrar, la hoja baja (clase `exiting`) y el avance real
+  // (onNext, que desmonta la hoja) se dispara al terminar esa bajada.
+  const [exiting, setExiting] = useState(false);
+  const firedRef = useRef(false);
+
   const sheetRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLParagraphElement>(null);
+
+  // Avanza UNA sola vez, venga del fin de la animación o del timeout de respaldo.
+  const finish = useCallback(() => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    onNext();
+  }, [onNext]);
+
+  // Cierre: lanza la bajada y avanza al terminar. Sin animación (reduced-motion o
+  // entornos sin matchMedia, p. ej. jsdom en tests) avanza en el acto.
+  const requestClose = useCallback(() => {
+    if (exiting || firedRef.current) return;
+    const noAnim =
+      typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function' ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (noAnim) finish();
+    else setExiting(true);
+  }, [exiting, finish]);
 
   // Foco inicial al contenido de la hoja (barra de estado, tabindex=-1). En
   // layout effect para que el fondo `inert` ya haya soltado el foco del botón.
@@ -49,7 +73,7 @@ export function FieldNoteSheet({ question, answer, isLast, onNext }: Props) {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onNext();
+        requestClose();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -81,14 +105,24 @@ export function FieldNoteSheet({ question, answer, isLast, onNext }: Props) {
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onNext]);
+  }, [requestClose]);
+
+  // Respaldo: si `animationend` no llegara, avanza igual pasada la bajada.
+  useEffect(() => {
+    if (!exiting) return;
+    const t = window.setTimeout(finish, 300);
+    return () => window.clearTimeout(t);
+  }, [exiting, finish]);
 
   return (
     <>
-      <div className={styles.scrim} aria-hidden="true" />
+      <div
+        className={`${styles.scrim}${exiting ? ` ${styles.exiting}` : ''}`}
+        aria-hidden="true"
+      />
       <div
         ref={sheetRef}
-        className={styles.sheet}
+        className={`${styles.sheet}${exiting ? ` ${styles.exiting}` : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={
@@ -98,6 +132,11 @@ export function FieldNoteSheet({ question, answer, isLast, onNext }: Props) {
               ? 'Respuesta correcta'
               : 'Respuesta incorrecta'
         }
+        onAnimationEnd={(e) => {
+          // Solo la animación PROPIA de la hoja (no las de sus hijos que burbujean)
+          // y solo durante la salida dispara el avance.
+          if (exiting && e.target === e.currentTarget) finish();
+        }}
       >
         {/* §A — Barra de estado (aria-live: se anuncia al abrir). */}
         <p
@@ -130,7 +169,7 @@ export function FieldNoteSheet({ question, answer, isLast, onNext }: Props) {
         <FactCard country={country} variant="sheet" facts={shownFacts} noHoist />
 
         {/* §D — CTA fijo: único camino para avanzar. */}
-        <Button className={styles.cta} onClick={onNext}>
+        <Button className={styles.cta} onClick={requestClose}>
           {isLast ? 'Ver resultado' : 'Siguiente'}
         </Button>
       </div>
