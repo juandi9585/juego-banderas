@@ -53,8 +53,8 @@ export function FactCard({
         <p className={styles.eyebrow}>Notas de campo</p>
       )}
       <ul className={styles.facts}>
-        {shownFacts.map((fact) => (
-          <li key={fact} className={styles.fact}>
+        {shownFacts.map((fact, i) => (
+          <li key={`${country.code}-${i}`} className={styles.fact}>
             {fact}
           </li>
         ))}

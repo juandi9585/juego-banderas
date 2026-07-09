@@ -9,7 +9,6 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/icon.svg'],
       // Precachear el shell, los datos, las banderas, las siluetas de ZONA y los
       // sonidos (wav) => offline garantizado. Las 194 siluetas de PAÍS quedan
       // FUERA del precache (decisión dura del usuario, roadmap §B.3): se sirven
