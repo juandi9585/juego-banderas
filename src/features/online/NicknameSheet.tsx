@@ -17,7 +17,10 @@ import styles from './NicknameSheet.module.css';
  * restaura el foco al elemento que lo abrió al cerrar.
  */
 export function NicknameSheet() {
-  const { createProfile, closeOnboarding } = useOnline();
+  const { createProfile, closeOnboarding, hasSession, isAnonymous } = useOnline();
+  // Con cuenta Google el progreso viaja con la cuenta; en anónimo (o antes de
+  // crear la sesión) vive en este dispositivo hasta el upgrade.
+  const googleAccount = hasSession && !isAnonymous;
 
   const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -83,8 +86,9 @@ export function NicknameSheet() {
           Elige tu apodo
         </h2>
         <p className={styles.lead}>
-          Con un apodo apareces en la clasificación global. Tu progreso se guarda
-          en este dispositivo.
+          {googleAccount
+            ? 'Con un apodo apareces en la clasificación global. Tu progreso queda ligado a tu cuenta de Google.'
+            : 'Con un apodo apareces en la clasificación global. Tu progreso se guarda en este dispositivo.'}
         </p>
 
         <form className={styles.form} onSubmit={handleSubmit}>

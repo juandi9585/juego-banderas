@@ -57,6 +57,9 @@ export function OnlineProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(enabled);
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  // Sesión sin perfil = vuelta del OAuth sin apodo elegido (ver OnlineContext).
+  const [hasSession, setHasSession] = useState(false);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   // Cola de reintentos en memoria (espejo de localStorage) + suscriptores a
@@ -108,9 +111,13 @@ export function OnlineProvider({ children }: { children: ReactNode }) {
     if (!session) {
       setProfile(null);
       setIsAnonymous(false);
+      setHasSession(false);
+      setSessionEmail(null);
       return null;
     }
     setIsAnonymous(session.user.is_anonymous === true);
+    setHasSession(true);
+    setSessionEmail(session.user.email ?? null);
     const p = await fetchOwnProfile(sb, session.user.id);
     setProfile(p);
     return p;
@@ -303,6 +310,8 @@ export function OnlineProvider({ children }: { children: ReactNode }) {
       loading,
       profile,
       isAnonymous,
+      hasSession,
+      sessionEmail,
       submitResult,
       createProfile,
       linkGoogle,
@@ -317,6 +326,8 @@ export function OnlineProvider({ children }: { children: ReactNode }) {
       loading,
       profile,
       isAnonymous,
+      hasSession,
+      sessionEmail,
       submitResult,
       createProfile,
       linkGoogle,

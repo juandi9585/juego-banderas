@@ -17,6 +17,14 @@ export interface OnlineContextValue {
   profile: PlayerProfile | null;
   /** La sesión actual es anónima (mostrar "Guardar progreso con Google"). */
   isAnonymous: boolean;
+  /**
+   * Hay sesión de auth viva aunque NO exista perfil todavía — el estado en que
+   * queda quien vuelve del OAuth de Google sin haber elegido apodo. Sin esta
+   * distinción la UI pintaría "crea tu cuenta" a alguien ya conectado.
+   */
+  hasSession: boolean;
+  /** Email de la sesión (cuenta Google); null en anónimas o sin sesión. */
+  sessionEmail: string | null;
 
   /** Envía una ronda competitiva terminada al ranking (idempotente por seed). */
   submitResult: (result: GameResult) => Promise<SubmitOutcome>;

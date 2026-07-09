@@ -25,6 +25,26 @@ function fakeClient(rpc: Record<string, unknown[]>): SupabaseClient {
   } as unknown as SupabaseClient;
 }
 
+/**
+ * Cliente falso CON sesión de Google pero SIN perfil (players → null): el estado
+ * en que queda quien vuelve del OAuth sin haber elegido apodo todavía.
+ */
+function fakeSessionClient(rpc: Record<string, unknown[]>): SupabaseClient {
+  const session = { user: { id: 'u-google', email: 'jd@test.com', is_anonymous: false } };
+  return {
+    auth: {
+      getSession: async () => ({ data: { session }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    },
+    rpc: async (name: string) => ({ data: rpc[name] ?? [], error: null }),
+    from: () => ({
+      select: () => ({
+        eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
+      }),
+    }),
+  } as unknown as SupabaseClient;
+}
+
 function renderRanking() {
   return render(
     <MemoryRouter initialEntries={['/ranking']}>
@@ -94,5 +114,20 @@ describe('RankingPage (smoke)', () => {
     expect(
       await screen.findByText('Nadie ha competido aún en esta zona. ¡Sé el primero!'),
     ).toBeInTheDocument();
+  });
+
+  it('con sesión de Google sin perfil reconoce la cuenta y abre el sheet del apodo solo', async () => {
+    mockGetSupabase.mockReturnValue(fakeSessionClient({ get_leaderboard: [] }));
+    renderRanking();
+
+    // La tarjeta distingue "conectado sin apodo" de "sin cuenta" (fix post-OAuth:
+    // antes eran idénticas y el login parecía no haber hecho nada).
+    expect(await screen.findByText(/Cuenta conectada \(jd@test\.com\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/Inicia sesión con Google/)).not.toBeInTheDocument();
+
+    // Continuación del onboarding: el sheet se abre sin buscar el botón, con el
+    // copy de progreso ligado a la cuenta (no "en este dispositivo").
+    expect(await screen.findByRole('dialog', { name: 'Elige tu apodo' })).toBeInTheDocument();
+    expect(screen.getByText(/ligado a tu cuenta de Google/)).toBeInTheDocument();
   });
 });

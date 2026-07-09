@@ -72,6 +72,15 @@ export function RankingPage() {
   const playerId = online.profile?.id ?? null;
   const reload = () => setReloadKey((k) => k + 1);
 
+  // Vuelta del OAuth (redirectTo = /ranking): sesión conectada pero sin apodo →
+  // abrir el sheet solo. Es la continuación del flujo que el usuario inició en
+  // Google; sin esto tenía que descubrir el botón por su cuenta. Cerrarlo con
+  // "Ahora no" no lo reabre (las deps no cambian hasta la próxima visita).
+  const { enabled, loading, hasSession, profile, openOnboarding } = online;
+  useEffect(() => {
+    if (enabled && !loading && hasSession && profile == null) openOnboarding();
+  }, [enabled, loading, hasSession, profile, openOnboarding]);
+
   // Efecto BOARD: top público. No depende de playerId (así no re-fetchea el
   // board cuando el perfil resuelve async).
   useEffect(() => {
@@ -248,7 +257,8 @@ export function RankingPage() {
 
 /** Punto de entrada al perfil propio: apodo (+#disc oculto salvo aquí) y upgrade. */
 function ProfileBar() {
-  const { profile, isAnonymous, openOnboarding, linkGoogle, signInGoogle } = useOnline();
+  const { profile, isAnonymous, hasSession, sessionEmail, openOnboarding, linkGoogle, signInGoogle } =
+    useOnline();
   const [googleError, setGoogleError] = useState<string | null>(null);
 
   async function connectGoogle(action: () => Promise<{ ok: boolean; error?: string }>) {
@@ -258,6 +268,21 @@ function ProfileBar() {
   }
 
   if (!profile) {
+    // Sesión viva sin apodo: la vuelta del OAuth de Google. Sin esta rama la
+    // tarjeta era idéntica a "sin cuenta" y el login parecía no haber hecho nada.
+    if (hasSession) {
+      return (
+        <div className={styles.profile}>
+          <p className={styles.profileLead}>
+            {sessionEmail ? `Cuenta conectada (${sessionEmail}). ` : 'Cuenta conectada. '}
+            Solo falta tu apodo para aparecer en la clasificación.
+          </p>
+          <div className={styles.profileActions}>
+            <Button onClick={openOnboarding}>Elegir apodo</Button>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className={styles.profile}>
         <p className={styles.profileLead}>

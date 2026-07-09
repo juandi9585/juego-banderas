@@ -102,6 +102,8 @@ function makeOnlineValue(): OnlineContextValue {
     loading: false,
     profile: null,
     isAnonymous: false,
+    hasSession: false,
+    sessionEmail: null,
     submitResult: vi.fn(async () => ({ kind: 'disabled' as const })),
     createProfile: vi.fn(async () => ({ ok: true })),
     linkGoogle: vi.fn(async () => ({ ok: true })),
