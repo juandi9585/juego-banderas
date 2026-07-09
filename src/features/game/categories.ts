@@ -26,11 +26,11 @@ export interface GameCategory {
 // fija el test de integridad (docs/competitivo.md §2). Cambiar el dataset obliga
 // a revisar estos Sets.
 const R_EUROPA_OESTE = new Set(['Europa Occidental', 'Europa del Norte', 'Europa Meridional']); // 8+10+9 = 27
-const R_EUROPA_ESTE = new Set(['Europa Oriental', 'Europa Central', 'Europa Sudoriental']); // 4+6+8 = 18
-const R_ASIA_OCCIDENTAL = new Set(['Asia Occidental']); // 16
+const R_EUROPA_ESTE = new Set(['Europa Oriental', 'Europa Central', 'Europa Sudoriental']); // 4+6+9 = 19
+const R_ASIA_OCCIDENTAL = new Set(['Asia Occidental']); // 17
 const R_SUDESTE_ASIATICO = new Set(['Sudeste Asiático']); // 11
 const R_ASIA_MERIDIONAL = new Set(['Asia Meridional']); // 9
-const R_ASIA_ORIENTAL_CENTRAL = new Set(['Asia Oriental', 'Asia Central']); // 5+5 = 10
+const R_ASIA_ORIENTAL_CENTRAL = new Set(['Asia Oriental', 'Asia Central']); // 6+5 = 11
 const R_AFRICA_NORTE_OCCIDENTAL = new Set(['África del Norte', 'África Occidental']); // 6+16 = 22
 const R_AFRICA_ORIENTAL = new Set(['África Oriental']); // 17
 const R_AFRICA_CENTRAL_AUSTRAL = new Set(['África Central', 'África Austral']); // 10+5 = 15

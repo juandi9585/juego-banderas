@@ -1763,6 +1763,24 @@ export const countries: Country[] = [
     ]
   },
   {
+    "code": "xk",
+    "name": "Kosovo",
+    "officialName": "República de Kosovo",
+    "continent": "Europa",
+    "region": "Europa Sudoriental",
+    "capital": "Pristina",
+    "population": 1756374,
+    "flag": "/flags/xk.svg",
+    "facts": [
+      "Tiene una de las poblaciones más jóvenes de Europa, con una edad media muy baja.",
+      "Sus monasterios medievales, como el de Dečani, son Patrimonio de la Humanidad.",
+      "El 'flija', un pastel de finas capas cocido con brasas, es un plato festivo típico.",
+      "Pristina, su capital, es famosa por su animada cultura de cafeterías.",
+      "Las montañas Malditas (Bjeshkët e Nemuna) ofrecen rutas alpinas entre los Balcanes.",
+      "El albanés y el serbio conviven como lenguas oficiales del país."
+    ]
+  },
+  {
     "code": "kw",
     "name": "Kuwait",
     "officialName": "Estado de Kuwait",
@@ -2483,6 +2501,24 @@ export const countries: Country[] = [
     ]
   },
   {
+    "code": "ps",
+    "name": "Palestina",
+    "officialName": "Estado de Palestina",
+    "continent": "Asia",
+    "region": "Asia Occidental",
+    "capital": "Ramala",
+    "population": 5043612,
+    "flag": "/flags/ps.svg",
+    "facts": [
+      "Jericó, en el valle del Jordán, es una de las ciudades habitadas más antiguas del mundo.",
+      "El mar Muerto, el punto de tierra firme más bajo del planeta, baña su territorio.",
+      "El aceite de oliva y el zaatar son pilares de su cocina mediterránea.",
+      "El bordado tradicional 'tatriz' es Patrimonio Cultural Inmaterial de la Humanidad.",
+      "El musaján, pollo con cebolla y sumac sobre pan taboon, es su plato más emblemático.",
+      "El knafeh, un dulce de queso caliente con almíbar, es una golosina muy popular."
+    ]
+  },
+  {
     "code": "pa",
     "name": "Panamá",
     "officialName": "República de Panamá",
@@ -3128,6 +3164,24 @@ export const countries: Country[] = [
       "Se la conoce como 'la tierra de las sonrisas'.",
       "El muay thai, boxeo con codos y rodillas, es su deporte nacional.",
       "El festival Songkran celebra el Año Nuevo con batallas de agua."
+    ]
+  },
+  {
+    "code": "tw",
+    "name": "Taiwán",
+    "officialName": "Taiwán",
+    "continent": "Asia",
+    "region": "Asia Oriental",
+    "capital": "Taipéi",
+    "population": 23588613,
+    "flag": "/flags/tw.svg",
+    "facts": [
+      "El rascacielos Taipéi 101 fue el edificio más alto del mundo entre 2004 y 2010.",
+      "El té de burbujas, con perlas de tapioca, nació aquí en los años ochenta.",
+      "El Yushan, o Monte Jade, se alza a casi 4.000 metros de altitud.",
+      "Sus bulliciosos mercados nocturnos son un icono de su cultura gastronómica.",
+      "El Museo del Palacio Nacional atesora una enorme colección de arte chino imperial.",
+      "Más de la mitad de la isla es montañosa y está cubierta de bosque subtropical."
     ]
   },
   {

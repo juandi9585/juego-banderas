@@ -44,8 +44,8 @@ describe('Siluetas de zona (public/shapes/zones)', () => {
 });
 
 describe('Siluetas de país (public/shapes/countries)', () => {
-  it('existe una por cada uno de los 194 países, con xmlns y ≤ 1,5 KiB', () => {
-    expect(countries).toHaveLength(194);
+  it('existe una por cada uno de los 197 países, con xmlns y ≤ 1,5 KiB', () => {
+    expect(countries).toHaveLength(197);
     const problems: string[] = [];
     for (const c of countries) {
       const file = join(countriesDir, `${c.code}.svg`);

@@ -23,9 +23,9 @@ const CONTINENTS: Continent[] = [
 const flagsDir = join(process.cwd(), 'public', 'flags');
 
 describe('Integridad del dataset', () => {
-  it('tiene 194 países y TOTAL_COUNTRIES coincide', () => {
-    expect(countries.length).toBe(194);
-    expect(TOTAL_COUNTRIES).toBe(194);
+  it('tiene 197 países y TOTAL_COUNTRIES coincide', () => {
+    expect(countries.length).toBe(197);
+    expect(TOTAL_COUNTRIES).toBe(197);
   });
 
   it('no hay códigos ni nombres duplicados', () => {
@@ -51,7 +51,7 @@ describe('Integridad del dataset', () => {
     const byCont: Record<string, number> = {};
     for (const c of countries) byCont[c.continent] = (byCont[c.continent] ?? 0) + 1;
     expect(byCont['Oceanía']).toBe(14);
-    expect(Object.values(byCont).reduce((a, b) => a + b, 0)).toBe(194);
+    expect(Object.values(byCont).reduce((a, b) => a + b, 0)).toBe(197);
   });
 
   it('Cuba está en el continente renombrado "América del Norte y Centro"', () => {
@@ -63,20 +63,20 @@ describe('Catálogo de categorías ↔ dataset (conteos exactos, §2.3)', () => 
   // Ancla catálogo ↔ datos: si el dataset cambia y descuadra un sector, este
   // test lo detecta. Conteos verificados sobre src/data/countries.json.
   const EXPECTED: Record<CategoryId, number> = {
-    mundo: 194,
+    mundo: 197,
     africa: 54,
-    asia: 46,
-    europa: 45,
+    asia: 48,
+    europa: 46,
     america: 35,
     'america-norte-centro': 23,
     'america-sur': 12,
     oceania: 14,
     'europa-oeste': 27,
-    'europa-este': 18,
-    'asia-occidental': 16,
+    'europa-este': 19,
+    'asia-occidental': 17,
     'sudeste-asiatico': 11,
     'asia-meridional': 9,
-    'asia-oriental-central': 10,
+    'asia-oriental-central': 11,
     'africa-norte-occidental': 22,
     'africa-oriental': 17,
     'africa-central-austral': 15,
@@ -99,7 +99,7 @@ describe('Catálogo de categorías ↔ dataset (conteos exactos, §2.3)', () => 
     }
   });
 
-  it('sumas por continente: Europa 27+18, Asia 16+11+9+10, África 22+17+15, América 23+12', () => {
+  it('sumas por continente: Europa 27+19, Asia 17+11+9+11, África 22+17+15, América 23+12', () => {
     expect(EXPECTED['europa-oeste'] + EXPECTED['europa-este']).toBe(EXPECTED.europa);
     expect(
       EXPECTED['asia-occidental'] +
@@ -159,13 +159,13 @@ describe('Motor + dataset real: filtro por categorías', () => {
     }
   });
 
-  it('preset "todas" + todas las categorías genera 194 preguntas sin reventar', () => {
+  it('preset "todas" + todas las categorías genera 197 preguntas sin reventar', () => {
     const quiz = buildQuiz(countries, {
       ...base,
       categories: [],
       questionCount: Number.MAX_SAFE_INTEGER,
     });
-    expect(quiz).toHaveLength(194);
+    expect(quiz).toHaveLength(197);
     // Cada pregunta MC tiene 4 opciones con la correcta incluida.
     for (const q of quiz.slice(0, 20)) {
       expect(q.options).toHaveLength(4);

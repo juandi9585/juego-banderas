@@ -106,7 +106,11 @@ async function loadScale(scale) {
 function isoOf(feature) {
   const p = feature.properties;
   let a2 = p.ISO_A2;
-  if (!a2 || a2 === "-99") a2 = p.ISO_A2_EH;
+  // "-99" es el sentinela de "sin código" de Natural Earth. Además, algunos
+  // territorios llevan un código COMPUESTO en ISO_A2 (Taiwán = "CN-TW"); su
+  // alpha-2 real vive en ISO_A2_EH ("TW"). Un alpha-2 nunca lleva guion, así
+  // que cualquier "-" fuerza el fallback a ISO_A2_EH.
+  if (!a2 || a2 === "-99" || String(a2).includes("-")) a2 = p.ISO_A2_EH;
   if (!a2 || a2 === "-99" || a2 === "-99.0") return null;
   return String(a2).toLowerCase();
 }
@@ -479,7 +483,7 @@ async function main() {
     for (const p of problems) console.log(`  x ${p}`);
     process.exit(1);
   }
-  console.log("\nValidación OK: 194/194 países, 18/18 zonas, todo dentro de presupuesto.");
+  console.log(`\nValidación OK: ${haveCodes.size}/${countries.length} países, ${haveZones.size}/${ZONES.length} zonas, todo dentro de presupuesto.`);
 }
 
 main().catch((e) => {
