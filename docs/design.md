@@ -342,15 +342,17 @@ Duraciones `--dur-fast 120ms`, `--dur 200ms`, `--dur-slow 320ms`, `--dur-slide 2
 y `background_color: '#FAF1E2'` (Crema); el `index.html` declara `theme-color` **crema** en claro y
 **`#1B1810`** (carbón cálido) en oscuro. Coherentes con la identidad de álbum de pegatinas.
 
-**Arte del icono — pendiente de regenerar (honesto).** Los PNG de `public/icons/`
-(`pwa-192x192.png`, `pwa-512x512.png`, `maskable-512x512.png`) y su fuente vectorial
-(`public/icons/icon.svg` / `icon-maskable.svg`) **no se regeneraron en este rediseño**: su arte
-todavía refleja la **paleta anterior** (azul marino profundo con acento metálico cálido). Es un
-desajuste conocido: la marca del launcher no combina aún con el crema/amarillo/tinta del sistema.
-**Follow-up pendiente**: rediseñar el icono a la nueva paleta (una **bandera-pegatina** con contorno de
-tinta y sombra dura sobre crema, amarillo como acento), regenerar los tres PNG y las fuentes SVG.
-Mientras tanto, el `theme_color`/`background_color` ya es crema, así que el chrome del navegador
-concuerda aunque el icono no.
+**Arte del icono (regenerado a la identidad vigente).** La marca es una **ficha de bandera-pegatina**
+(eco de `FlagImage`): tarjeta blanca con **contorno de tinta grueso** y **sombra dura desplazada**,
+**ladeada −5°** como sticker, sobre campo **amarillo de marca** (`#FFD935`); dentro, un **globo**
+terráqueo en tinta (círculo + meridiano + ecuador) = "banderas del mundo". Aplica el signature del
+sistema (§4): contorno + sombra dura + el ladeo del álbum de pegatinas.
+- `icon.svg` — fuente vectorial del icono `any` (campo amarillo con `rx 112`, esquinas chunky).
+- `icon-maskable.svg` — amarillo a sangre (sin esquinas); la marca escalada a `0.8` y centrada dentro
+  de la zona segura (~80%).
+- `pwa-192x192.png`, `pwa-512x512.png` (propósito `any`) y `maskable-512x512.png` (propósito
+  `maskable`) se **rasterizan desde los SVG** (Chromium headless a escala 1:1, píxeles exactos).
+El `theme_color`/`background_color` crema del chrome del navegador combina con el icono.
 
 ---
 
