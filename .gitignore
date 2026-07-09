@@ -15,6 +15,9 @@ dist-ssr
 # Cache de descargas de Natural Earth (scripts/generate-shapes.mjs)
 scripts/.cache/
 
+# Bundle del motor para Edge Functions — generado por `npm run engine:server`
+supabase/functions/_shared/engine.mjs
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
