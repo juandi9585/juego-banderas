@@ -66,6 +66,9 @@ describe('App (smoke)', () => {
     const search = screen.getByRole('searchbox', { name: 'Buscar país' });
     await user.type(search, 'peru'); // sin tilde: la normalización debe encontrarlo
     expect(await screen.findByText('Perú')).toBeInTheDocument();
-    expect(screen.getByText('1 país')).toBeInTheDocument();
+    // El conteo visible (no la región aria-live diferida, que se ignora aquí).
+    expect(
+      screen.getByText('1 país', { ignore: 'script, style, [aria-live]' }),
+    ).toBeInTheDocument();
   });
 });

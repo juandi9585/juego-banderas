@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCountries } from '../features/explore/useCountries';
 import { CountryCard } from '../features/explore/CountryCard';
 import { ContinentPicker } from '../components/ContinentPicker';
@@ -10,6 +10,17 @@ export function ExplorePage() {
   const [query, setQuery] = useState('');
   const [continent, setContinent] = useState<ContinentFilter>('all');
   const results = useCountries(query, continent);
+  const count = results.length;
+
+  // El conteo visible cambia en cada tecla; el anuncio a lectores se difiere para
+  // no leer un número nuevo por pulsación (se locuta solo cuando la búsqueda para).
+  const [announced, setAnnounced] = useState(count);
+  useEffect(() => {
+    const t = setTimeout(() => setAnnounced(count), 500);
+    return () => clearTimeout(t);
+  }, [count]);
+
+  const countLabel = (n: number) => `${n} ${n === 1 ? 'país' : 'países'}`;
 
   return (
     <div className={styles.page}>
@@ -31,8 +42,10 @@ export function ExplorePage() {
         <ContinentPicker value={continent} onChange={setContinent} />
       </div>
 
-      <p className={styles.count} aria-live="polite">
-        {results.length} {results.length === 1 ? 'país' : 'países'}
+      <p className={styles.count}>{countLabel(count)}</p>
+      {/* Anuncio diferido para lectores de pantalla (sin spam por tecla). */}
+      <p className={styles.srOnly} aria-live="polite">
+        {countLabel(announced)}
       </p>
 
       {results.length > 0 ? (
