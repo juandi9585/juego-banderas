@@ -1,7 +1,8 @@
 import { useState, type CSSProperties } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useGame } from '../../features/game/useGame';
 import { useRecords } from '../../features/records/useRecords';
+import { useOnline } from '../../features/online/useOnline';
 import { countries } from '../../data/dataset';
 import { Button } from '../../components/Button';
 import { SegmentedControl, type SegmentOption } from '../../components/SegmentedControl';
@@ -63,6 +64,7 @@ export function CompetitivePanel() {
   const navigate = useNavigate();
   const { startGame } = useGame();
   const { getBest } = useRecords();
+  const online = useOnline();
 
   const [mode, setMode] = useState<CompetitiveMode>('mixto');
   const [selected, setSelected] = useState<CategoryId | null>(null);
@@ -166,6 +168,32 @@ export function CompetitivePanel() {
       </div>
 
       <div className={styles.startBar}>
+        {/* Estado de sesión online (roadmap §C). Con env vars ausentes NO aparece
+            (cero rastro de lo online). Alto reservado: no salta al resolverse. */}
+        {online.enabled && (
+          <p className={styles.sessionLine}>
+            {!online.loading && (
+              <span className={styles.sessionInner}>
+                {online.profile ? (
+                  <>
+                    Compites como{' '}
+                    <Link to="/ranking" className={styles.sessionLink}>
+                      {online.profile.nickname}
+                    </Link>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.sessionLink}
+                    onClick={online.openOnboarding}
+                  >
+                    Crea un apodo para publicar tus marcas
+                  </button>
+                )}
+              </span>
+            )}
+          </p>
+        )}
         <Button onClick={handleStart} disabled={selected == null}>
           Comenzar
         </Button>

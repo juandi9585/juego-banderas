@@ -6,6 +6,8 @@
 // para que la UI decida el copy. La clasificación del submit vive en queue.ts.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
+  GlobalLeaderboardRow,
+  GlobalPlayerRank,
   LeaderboardRow,
   OwnRecordRow,
   PlayerProfile,
@@ -143,6 +145,35 @@ export async function fetchPlayerRank(
   });
   if (error) throw error;
   const rows = (data ?? []) as PlayerRank[];
+  return rows[0] ?? null;
+}
+
+/** Top N GLOBAL de un modo (suma de mejores marcas por zona). Lanza en error. */
+export async function fetchGlobalLeaderboard(
+  sb: SupabaseClient,
+  mode: OnlineMode,
+  limit = 50,
+): Promise<GlobalLeaderboardRow[]> {
+  const { data, error } = await sb.rpc('get_global_leaderboard', {
+    p_mode: mode,
+    p_limit: limit,
+  });
+  if (error) throw error;
+  return (data ?? []) as GlobalLeaderboardRow[];
+}
+
+/** Tu puesto GLOBAL de un modo (con tus agregados), o null si no tienes marcas. */
+export async function fetchGlobalPlayerRank(
+  sb: SupabaseClient,
+  mode: OnlineMode,
+  playerId: string,
+): Promise<GlobalPlayerRank | null> {
+  const { data, error } = await sb.rpc('get_player_global_rank', {
+    p_mode: mode,
+    p_player_id: playerId,
+  });
+  if (error) throw error;
+  const rows = (data ?? []) as GlobalPlayerRank[];
   return rows[0] ?? null;
 }
 

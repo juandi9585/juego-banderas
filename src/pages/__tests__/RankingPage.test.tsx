@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { RankingPage } from '../RankingPage';
 import { OnlineProvider } from '../../features/online/OnlineProvider';
 import { RecordsProvider } from '../../features/records/RecordsProvider';
 import { getSupabase } from '../../lib/supabase';
-import type { LeaderboardRow } from '../../features/online/types';
+import type { GlobalLeaderboardRow, LeaderboardRow } from '../../features/online/types';
 
 // Smoke de la página Ranking con el cliente Supabase MOCKEADO a nivel de módulo
 // (src/lib/supabase.ts). Sin red real: se controla qué devuelve getSupabase().
@@ -71,53 +72,85 @@ const row = (over: Partial<LeaderboardRow>): LeaderboardRow => ({
   ...over,
 });
 
+const gRow = (over: Partial<GlobalLeaderboardRow>): GlobalLeaderboardRow => ({
+  puesto: 1,
+  player_id: 'p1',
+  nickname: 'PruebaJD',
+  discriminator: 42,
+  points: 2700,
+  zones: 3,
+  correct: 13,
+  duration_ms: 12000,
+  achieved_at: '2026-07-09T00:00:00Z',
+  ...over,
+});
+
 beforeEach(() => {
   localStorage.clear();
   mockGetSupabase.mockReset();
 });
 
 describe('RankingPage (smoke)', () => {
-  it('sin config (getSupabase → null) muestra el aviso de conexión y el selector de zonas', () => {
+  it('sin config muestra el aviso y Global viene seleccionado por defecto', () => {
     mockGetSupabase.mockReturnValue(null);
     renderRanking();
 
     expect(screen.getByRole('heading', { name: 'Ranking' })).toBeInTheDocument();
     expect(screen.getByText('El ranking necesita conexión.')).toBeInTheDocument();
-    // El selector de zonas se renderiza igual; "Mundo" es la zona por defecto.
-    // Radios NATIVOS → estado por `checked`, no aria-checked.
-    expect(screen.getByRole('radio', { name: 'Mundo' })).toBeChecked();
+    // Chips = radios NATIVOS; Global es la carta insignia y la selección inicial.
+    expect(screen.getByRole('radio', { name: 'Global' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Mundo' })).not.toBeChecked();
     expect(screen.getByRole('radio', { name: 'Europa' })).toBeInTheDocument();
   });
 
-  it('con cliente devuelve el top y pinta las filas (apodo + puntaje)', async () => {
+  it('Global (por defecto): pinta filas con puntaje y cobertura "N zonas"', async () => {
     mockGetSupabase.mockReturnValue(
       fakeClient({
-        get_leaderboard: [
-          row({ puesto: 1, player_id: 'p1', nickname: 'PruebaJD', points: 2700 }),
-          row({ puesto: 2, player_id: 'p2', nickname: 'Otra', points: 2400 }),
+        get_global_leaderboard: [
+          gRow({ puesto: 1, player_id: 'p1', nickname: 'PruebaJD', points: 2700, zones: 3 }),
+          gRow({ puesto: 2, player_id: 'p2', nickname: 'JD.', points: 2475, zones: 1 }),
         ],
       }),
     );
     renderRanking();
 
     expect(await screen.findByText('PruebaJD')).toBeInTheDocument();
-    expect(screen.getByText('Otra')).toBeInTheDocument();
-    // Puntaje presente (el separador de miles depende del ICU del entorno:
-    // "2.700" en navegador, "2700" en Node con ICU reducido).
+    expect(screen.getByText('JD.')).toBeInTheDocument();
     expect(screen.getByText(/2\.?700/)).toBeInTheDocument();
+    // La cobertura del álbum es visible.
+    expect(screen.getByText('3 zonas')).toBeInTheDocument();
+    expect(screen.getByText('1 zona')).toBeInTheDocument();
   });
 
-  it('con cliente pero zona sin marcas muestra el estado vacío', async () => {
-    mockGetSupabase.mockReturnValue(fakeClient({ get_leaderboard: [] }));
+  it('elegir una zona carga su tabla (get_leaderboard) sin cobertura', async () => {
+    const user = userEvent.setup();
+    mockGetSupabase.mockReturnValue(
+      fakeClient({
+        get_global_leaderboard: [],
+        get_leaderboard: [row({ nickname: 'PruebaJD', points: 2700 })],
+      }),
+    );
+    renderRanking();
+
+    await user.click(screen.getByRole('radio', { name: 'Mundo' }));
+
+    expect(await screen.findByText('PruebaJD')).toBeInTheDocument();
+    expect(screen.getByText(/2\.?700/)).toBeInTheDocument();
+    // Las tablas de zona no muestran "N zonas" (eso es solo de Global).
+    expect(screen.queryByText(/\bzonas?\b/)).not.toBeInTheDocument();
+  });
+
+  it('Global vacío muestra su propio estado vacío', async () => {
+    mockGetSupabase.mockReturnValue(fakeClient({ get_global_leaderboard: [] }));
     renderRanking();
 
     expect(
-      await screen.findByText('Nadie ha competido aún en esta zona. ¡Sé el primero!'),
+      await screen.findByText('Nadie ha sumado marcas todavía. ¡Sé el primero!'),
     ).toBeInTheDocument();
   });
 
   it('con sesión de Google sin perfil reconoce la cuenta y abre el sheet del apodo solo', async () => {
-    mockGetSupabase.mockReturnValue(fakeSessionClient({ get_leaderboard: [] }));
+    mockGetSupabase.mockReturnValue(fakeSessionClient({ get_global_leaderboard: [] }));
     renderRanking();
 
     // La tarjeta distingue "conectado sin apodo" de "sin cuenta" (fix post-OAuth:

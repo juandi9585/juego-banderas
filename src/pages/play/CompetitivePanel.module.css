@@ -186,7 +186,23 @@
   margin-inline: calc(-1 * var(--space-4));
   padding: var(--space-3) var(--space-4);
   padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
-  background: linear-gradient(to top, var(--c-bg) 72%, transparent);
+  /* Barra OPACA: la línea de sesión vive en su borde superior y con el viejo
+     gradiente interno (c-bg 72% → transparente) el ledger scrolleado se
+     transparentaba justo debajo del texto. */
+  background: var(--c-bg);
+}
+
+/* El desvanecido queda como visera POR ENCIMA de la barra: el contenido se
+   funde antes de tocar la línea de sesión, sin robarle opacidad a la barra. */
+.startBar::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  height: var(--space-4);
+  background: linear-gradient(to top, var(--c-bg), transparent);
+  pointer-events: none;
 }
 
 .startHint {
@@ -195,4 +211,40 @@
   font-size: var(--text-xs);
   color: var(--c-ink-3);
   text-align: center;
+}
+
+/* Estado de sesión online, discreto sobre el CTA. Alto reservado (1 línea) para
+   que resolver la sesión no empuje el botón. */
+.sessionLine {
+  min-height: 1.25rem;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--c-ink-2);
+  text-align: center;
+}
+
+/* Aparición suave del contenido al resolverse (neutralizada en reduced-motion). */
+.sessionInner {
+  display: inline-block;
+  animation: sessionIn var(--dur) var(--ease-out) both;
+}
+
+@keyframes sessionIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sessionLink {
+  color: var(--c-accent-ink);
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sessionLink:hover {
+  color: var(--c-ink);
 }

@@ -3,17 +3,14 @@ import { getSupabase } from '../lib/supabase';
 import { useOnline } from '../features/online/useOnline';
 import { useRecords } from '../features/records/useRecords';
 import {
+  fetchGlobalLeaderboard,
+  fetchGlobalPlayerRank,
   fetchLeaderboard,
   fetchOwnRecord,
   fetchPlayerRank,
 } from '../features/online/api';
 import { formatDiscriminator } from '../features/online/nickname';
-import type {
-  LeaderboardRow,
-  OnlineMode,
-  OwnRecordRow,
-  PlayerRank,
-} from '../features/online/types';
+import type { OnlineMode } from '../features/online/types';
 import { SegmentedControl, type SegmentOption } from '../components/SegmentedControl';
 import { Button } from '../components/Button';
 import { TOTAL_COUNTRIES } from '../data/dataset';
@@ -25,49 +22,82 @@ const MODE_OPTIONS: SegmentOption<OnlineMode>[] = [
   { value: 'type-name', label: 'Escrito' },
 ];
 
-// Mismo reparto de zonas que el panel competitivo (docs/design.md §19.4): Mundo
-// destacado, luego Continentes y Sectores.
+// Selección del selector de zona: una categoría real o la vista agregada Global.
+type ZoneSel = CategoryId | 'global';
+
+// Orden de los chips: Global (insignia) · Mundo · continentes · sectores.
 const CONTINENTES = GAME_CATEGORIES.filter(
   (c) => c.group === 'continente' && c.id !== 'mundo',
 );
 const SECTORES = GAME_CATEGORIES.filter((c) => c.group === 'sector');
-const WORLD = GAME_CATEGORIES.find((c) => c.id === 'mundo')!;
 const LABEL: Record<string, string> = Object.fromEntries(
   GAME_CATEGORIES.map((c) => [c.id, c.label]),
 );
+const zoneLabel = (z: ZoneSel) => (z === 'global' ? 'Global' : LABEL[z]);
 
 const fmt = (n: number) => n.toLocaleString('es-ES');
+const coverage = (n: number) => `${n} ${n === 1 ? 'zona' : 'zonas'}`;
 
 /** ¿No hay red (sin cliente o navegador offline)? Se relee en cada fetch. */
 function isOffline(sb: unknown): boolean {
   return !sb || (typeof navigator !== 'undefined' && navigator.onLine === false);
 }
 
+// Fila común de tabla (zona o global). `zones` solo viene en la vista Global.
+interface BoardRow {
+  puesto: number;
+  player_id: string;
+  nickname: string;
+  points: number;
+  zones?: number;
+}
+// Tu fila (fuera del top): unifica zona (rank + record) y global (una RPC).
+interface PersonalRow {
+  puesto: number;
+  total_jugadores: number;
+  points: number;
+  zones?: number;
+}
+
 type BoardStatus = 'loading' | 'ok' | 'error' | 'offline';
+type Records = ReturnType<typeof useRecords>;
+
+/** Suma local de tus mejores marcas por zona (fallback offline de Global). */
+function localGlobal(records: Records, mode: OnlineMode): { points: number; zones: number } | null {
+  let points = 0;
+  let zones = 0;
+  for (const cat of GAME_CATEGORIES) {
+    const best = records.getBest(cat.id, mode);
+    if (best) {
+      points += best.points;
+      zones += 1;
+    }
+  }
+  return zones > 0 ? { points, zones } : null;
+}
 
 /**
  * Módulo Ranking (docs/roadmap.md §C, design.md §19.1): tercer enlace del nav.
- * Selector de zona (lenguaje del ledger competitivo) + switch Mixto | Escrito,
- * top 50 por (zona, modo) y tu puesto aunque no estés en el top. Estados: sin
- * conexión / sin config → aviso + récords LOCALES como fallback; vacío; error.
- * Consultar no es jugar: esta ruta no arranca partidas.
+ * Selector de zona en fila de chips (Global · Mundo · continentes · sectores) +
+ * switch Mixto | Escrito. Global agrega tus mejores marcas por zona (mecánica de
+ * completar el álbum); las zonas muestran el top por (zona, modo). En ambos: tu
+ * puesto aunque no estés en el top. Estados: cargando / vacío / error / sin
+ * conexión (aviso + récords LOCALES) / recarga al volver la red.
  */
 export function RankingPage() {
   const online = useOnline();
   const records = useRecords();
 
   const [mode, setMode] = useState<OnlineMode>('mixto');
-  const [zone, setZone] = useState<CategoryId>('mundo');
+  // Global es la vista por defecto al entrar (la carta insignia).
+  const [zone, setZone] = useState<ZoneSel>('global');
   const [reloadKey, setReloadKey] = useState(0);
 
   // Board público (top): su estado NO depende del fetch personal.
   const [boardStatus, setBoardStatus] = useState<BoardStatus>('loading');
-  const [rows, setRows] = useState<LeaderboardRow[]>([]);
-
-  // Fila personal (tu puesto/marca): aislada del board — si falla, el top se
-  // muestra igual y solo se degrada "tu fila".
-  const [playerRank, setPlayerRank] = useState<PlayerRank | null>(null);
-  const [ownRecord, setOwnRecord] = useState<OwnRecordRow | null>(null);
+  const [rows, setRows] = useState<BoardRow[]>([]);
+  // Tu fila (puesto/marca), aislada del board — si falla, el top se muestra igual.
+  const [personal, setPersonal] = useState<PersonalRow | null>(null);
 
   const playerId = online.profile?.id ?? null;
   const reload = () => setReloadKey((k) => k + 1);
@@ -81,8 +111,7 @@ export function RankingPage() {
     if (enabled && !loading && hasSession && profile == null) openOnboarding();
   }, [enabled, loading, hasSession, profile, openOnboarding]);
 
-  // Efecto BOARD: top público. No depende de playerId (así no re-fetchea el
-  // board cuando el perfil resuelve async).
+  // Efecto BOARD: top público de la zona o de Global. No depende de playerId.
   useEffect(() => {
     const sb = getSupabase();
     if (isOffline(sb)) {
@@ -94,7 +123,21 @@ export function RankingPage() {
     setBoardStatus('loading');
     void (async () => {
       try {
-        const data = await fetchLeaderboard(sb!, zone, mode);
+        const data: BoardRow[] =
+          zone === 'global'
+            ? (await fetchGlobalLeaderboard(sb!, mode)).map((r) => ({
+                puesto: r.puesto,
+                player_id: r.player_id,
+                nickname: r.nickname,
+                points: r.points,
+                zones: r.zones,
+              }))
+            : (await fetchLeaderboard(sb!, zone, mode)).map((r) => ({
+                puesto: r.puesto,
+                player_id: r.player_id,
+                nickname: r.nickname,
+                points: r.points,
+              }));
         if (!active) return;
         setRows(data);
         setBoardStatus('ok');
@@ -112,25 +155,36 @@ export function RankingPage() {
   useEffect(() => {
     const sb = getSupabase();
     if (isOffline(sb) || !playerId) {
-      setPlayerRank(null);
-      setOwnRecord(null);
+      setPersonal(null);
       return;
     }
     let active = true;
     void (async () => {
       try {
-        const [rank, record] = await Promise.all([
-          fetchPlayerRank(sb!, zone, mode, playerId),
-          fetchOwnRecord(sb!, playerId, zone, mode),
-        ]);
-        if (!active) return;
-        setPlayerRank(rank);
-        setOwnRecord(record);
+        if (zone === 'global') {
+          const r = await fetchGlobalPlayerRank(sb!, mode, playerId);
+          if (!active) return;
+          setPersonal(
+            r
+              ? { puesto: r.puesto, total_jugadores: r.total_jugadores, points: r.points, zones: r.zones }
+              : null,
+          );
+        } else {
+          const [rank, record] = await Promise.all([
+            fetchPlayerRank(sb!, zone, mode, playerId),
+            fetchOwnRecord(sb!, playerId, zone, mode),
+          ]);
+          if (!active) return;
+          setPersonal(
+            rank && record
+              ? { puesto: rank.puesto, total_jugadores: rank.total_jugadores, points: record.points }
+              : null,
+          );
+        }
       } catch {
         // Degrada solo "tu fila"; el board público sigue en pie.
         if (!active) return;
-        setPlayerRank(null);
-        setOwnRecord(null);
+        setPersonal(null);
       }
     })();
     return () => {
@@ -145,9 +199,9 @@ export function RankingPage() {
     return () => window.removeEventListener('online', onOnline);
   }, []);
 
+  const isGlobal = zone === 'global';
   const inTop = playerId ? rows.some((r) => r.player_id === playerId) : false;
-  const showYourRow =
-    online.profile != null && playerRank != null && ownRecord != null && !inTop;
+  const showYourRow = online.profile != null && personal != null && !inTop;
 
   return (
     <div className={styles.page}>
@@ -165,31 +219,41 @@ export function RankingPage() {
         onChange={setMode}
       />
 
-      {/* Selector de zona: radios NATIVOS (flechas + un solo tab-stop), mismo
-          lenguaje visual que el ledger competitivo (§19.4). */}
-      <div className={styles.ledger} role="radiogroup" aria-label="Zona del ranking">
-        <ZoneRow cat={WORLD} zone={zone} onSelect={setZone} />
-        <p className={styles.groupRow}>Continentes</p>
+      {/* Selector de zona: fila de chips-pegatina deslizable, radios NATIVOS
+          (flechas + un solo tab-stop). Global va primero, con el glifo de marca. */}
+      <div className={styles.zones} role="radiogroup" aria-label="Zona del ranking">
+        <ZoneChip value="global" label="Global" zone={zone} onSelect={setZone} />
+        <ZoneChip value="mundo" label={LABEL['mundo']} zone={zone} onSelect={setZone} />
         {CONTINENTES.map((cat) => (
-          <ZoneRow key={cat.id} cat={cat} zone={zone} onSelect={setZone} />
+          <ZoneChip key={cat.id} value={cat.id} label={cat.label} zone={zone} onSelect={setZone} />
         ))}
-        <p className={styles.groupRow}>Sectores</p>
         {SECTORES.map((cat) => (
-          <ZoneRow key={cat.id} cat={cat} zone={zone} onSelect={setZone} />
+          <ZoneChip key={cat.id} value={cat.id} label={cat.label} zone={zone} onSelect={setZone} />
         ))}
       </div>
 
-      <section aria-label={`Clasificación de ${LABEL[zone]}`}>
-        <h2 className={styles.boardTitle}>
-          {LABEL[zone]}{' '}
-          <span className={styles.boardMode}>
-            · {mode === 'mixto' ? 'Mixto' : 'Escrito'}
-          </span>
-        </h2>
+      <section aria-label={`Clasificación de ${zoneLabel(zone)}`}>
+        <div className={styles.boardHead}>
+          <h2 className={styles.boardTitle}>
+            {zoneLabel(zone)}{' '}
+            <span className={styles.boardMode}>
+              · {mode === 'mixto' ? 'Mixto' : 'Escrito'}
+            </span>
+          </h2>
+          {isGlobal && (
+            <p className={styles.boardHint}>
+              Tu mejor marca en cada zona, sumada. Cubre más zonas para subir.
+            </p>
+          )}
+        </div>
 
         <div aria-live="polite">
           {boardStatus === 'offline' && (
-            <OfflineFallback local={records.getBest(zone, mode)} onRetry={reload} />
+            <OfflineFallback
+              local={zone === 'global' ? localGlobal(records, mode) : records.getBest(zone, mode)}
+              isGlobal={isGlobal}
+              onRetry={reload}
+            />
           )}
 
           {boardStatus === 'loading' && (
@@ -207,7 +271,9 @@ export function RankingPage() {
 
           {boardStatus === 'ok' && rows.length === 0 && (
             <p className={styles.stateNote}>
-              Nadie ha competido aún en esta zona. ¡Sé el primero!
+              {isGlobal
+                ? 'Nadie ha sumado marcas todavía. ¡Sé el primero!'
+                : 'Nadie ha competido aún en esta zona. ¡Sé el primero!'}
             </p>
           )}
 
@@ -217,34 +283,38 @@ export function RankingPage() {
                 <li
                   key={row.player_id}
                   className={
-                    row.player_id === playerId
-                      ? `${styles.row} ${styles.isYou}`
-                      : styles.row
+                    row.player_id === playerId ? `${styles.row} ${styles.isYou}` : styles.row
                   }
                 >
                   <span className={styles.rank}>{row.puesto}</span>
                   <span className={styles.name}>
                     {row.nickname}
-                    {row.player_id === playerId && (
-                      <span className={styles.youTag}>Tú</span>
+                    {row.player_id === playerId && <span className={styles.youTag}>Tú</span>}
+                  </span>
+                  <span className={styles.scoreCell}>
+                    <span className={styles.points}>{fmt(row.points)}</span>
+                    {row.zones != null && (
+                      <span className={styles.cover}>{coverage(row.zones)}</span>
                     )}
                   </span>
-                  <span className={styles.points}>{fmt(row.points)}</span>
                 </li>
               ))}
 
               {/* Tu fila, si tienes marca pero quedaste fuera del top visible. */}
-              {showYourRow && playerRank && ownRecord && (
+              {showYourRow && personal && (
                 <li className={`${styles.row} ${styles.isYou} ${styles.yourRowApart}`}>
-                  <span className={styles.rank}>{playerRank.puesto}</span>
+                  <span className={styles.rank}>{personal.puesto}</span>
                   <span className={styles.name}>
                     {online.profile?.nickname}
                     <span className={styles.youTag}>Tú</span>
-                    <span className={styles.ofTotal}>
-                      de {fmt(playerRank.total_jugadores)}
-                    </span>
+                    <span className={styles.ofTotal}>de {fmt(personal.total_jugadores)}</span>
                   </span>
-                  <span className={styles.points}>{fmt(ownRecord.points)}</span>
+                  <span className={styles.scoreCell}>
+                    <span className={styles.points}>{fmt(personal.points)}</span>
+                    {personal.zones != null && (
+                      <span className={styles.cover}>{coverage(personal.zones)}</span>
+                    )}
+                  </span>
                 </li>
               )}
             </ol>
@@ -329,43 +399,71 @@ function ProfileBar() {
   );
 }
 
-/** Fila-zona del ledger: label con radio NATIVO oculto (tick de hoist a ámbar al elegir). */
-function ZoneRow({
-  cat,
+/** Glifo de globo (círculo + meridiano + ecuador): la marca del álbum, para Global. */
+function GlobeGlyph() {
+  return (
+    <svg
+      className={styles.chipGlobe}
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <ellipse cx="12" cy="12" rx="4.2" ry="9" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+    </svg>
+  );
+}
+
+/** Chip-pegatina de zona: label con radio NATIVO oculto. Global lleva el globo. */
+function ZoneChip({
+  value,
+  label,
   zone,
   onSelect,
 }: {
-  cat: (typeof GAME_CATEGORIES)[number];
-  zone: CategoryId;
-  onSelect: (id: CategoryId) => void;
+  value: ZoneSel;
+  label: string;
+  zone: ZoneSel;
+  onSelect: (z: ZoneSel) => void;
 }) {
-  const rowClass = cat.id === 'mundo' ? `${styles.zoneRow} ${styles.isWorld}` : styles.zoneRow;
+  const selected = zone === value;
   return (
-    <label className={rowClass}>
+    <label className={styles.chip}>
       <input
         type="radio"
         name="zona-ranking"
         className={styles.radio}
-        value={cat.id}
-        checked={zone === cat.id}
-        onChange={() => onSelect(cat.id)}
+        value={value}
+        checked={selected}
+        onChange={() => onSelect(value)}
       />
-      <span
-        className={styles.zoneShape}
-        style={{ '--shape-src': `url(/shapes/zones/${cat.id}.svg)` } as CSSProperties}
-        aria-hidden="true"
-      />
-      {cat.label}
+      {value === 'global' ? (
+        <GlobeGlyph />
+      ) : (
+        <span
+          className={styles.chipShape}
+          style={{ '--shape-src': `url(/shapes/zones/${value}.svg)` } as CSSProperties}
+          aria-hidden="true"
+        />
+      )}
+      {label}
     </label>
   );
 }
 
-/** Sin conexión / sin config: aviso + tu récord LOCAL de la zona + Reintentar. */
+/** Sin conexión / sin config: aviso + tu marca LOCAL (récord de zona o total global) + Reintentar. */
 function OfflineFallback({
   local,
+  isGlobal,
   onRetry,
 }: {
-  local: ReturnType<ReturnType<typeof useRecords>['getBest']>;
+  local: { points: number; zones?: number } | null;
+  isGlobal: boolean;
   onRetry: () => void;
 }) {
   return (
@@ -373,11 +471,21 @@ function OfflineFallback({
       <p className={styles.stateNote}>El ranking necesita conexión.</p>
       {local ? (
         <p className={styles.localRecord}>
-          Tu récord local aquí: <strong>{fmt(local.points)} pts</strong>
+          {isGlobal && local.zones != null ? (
+            <>
+              Tu total local: <strong>{fmt(local.points)} pts</strong> en {coverage(local.zones)}
+            </>
+          ) : (
+            <>
+              Tu récord local aquí: <strong>{fmt(local.points)} pts</strong>
+            </>
+          )}
         </p>
       ) : (
         <p className={styles.localRecord}>
-          Aún no tienes récord local en esta zona.
+          {isGlobal
+            ? 'Aún no tienes marcas locales.'
+            : 'Aún no tienes récord local en esta zona.'}
         </p>
       )}
       <Button variant="secondary" onClick={onRetry}>

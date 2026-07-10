@@ -55,6 +55,31 @@ export interface PlayerRank {
   total_jugadores: number;
 }
 
+// ── Global (RPCs get_global_leaderboard / get_player_global_rank) ─────────────
+// Suma de las mejores marcas del jugador en las 18 categorías DEL MODO: cubrir
+// más zonas sube el total (mecánica de completar el álbum). `zones` = nº de
+// categorías con marca. Orden rank() por points → correct → duration_ms.
+export interface GlobalLeaderboardRow {
+  puesto: number;
+  player_id: string;
+  nickname: string;
+  discriminator: number;
+  points: number;
+  zones: number;
+  correct: number;
+  duration_ms: number;
+  achieved_at: string;
+}
+
+export interface GlobalPlayerRank {
+  puesto: number;
+  total_jugadores: number;
+  points: number;
+  zones: number;
+  correct: number;
+  duration_ms: number;
+}
+
 // Mejor marca propia (tabla records) para la zona/modo seleccionados: alimenta
 // la fila "tú" cuando el jugador no está en el top visible.
 export interface OwnRecordRow {

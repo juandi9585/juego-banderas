@@ -99,55 +99,63 @@
   color: var(--c-error-ink);
 }
 
-/* ── Ledger de zonas (eco del panel competitivo, §19.4) ─────────────────────
-   Capado en alto con scroll interno: es el índice del ranking (se hojea), y así
-   la tabla no queda empujada muy abajo. */
-.ledger {
-  max-height: 42vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: var(--c-surface);
-  border: var(--border-mid) solid var(--c-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-}
-
-.ledger > * + * {
-  border-top: var(--border-thin) solid var(--c-border);
-}
-
-/* Banda de grupo (Continentes / Sectores): superficie hundida. */
-.groupRow {
-  padding: var(--space-1) var(--space-4);
-  background: var(--c-surface-2);
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  font-weight: var(--weight-medium);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  color: var(--c-ink-3);
-}
-
-/* Fila-zona = label que envuelve un radio NATIVO oculto pero focusable (mismo
-   patrón que el ledger competitivo: flechas + un solo tab-stop gratis). El tick
-   de hoist es inset y nunca toca las esquinas redondeadas. */
-.zoneRow {
-  position: relative;
+/* ── Selector de zona: fila de chips-pegatina deslizable ─────────────────────
+   Reemplaza al ledger vertical (empujaba la tabla fuera del pliegue). Una sola
+   fila horizontal con scroll oculto pero deslizable; scroll-snap suave. Los
+   inputs siguen siendo radios NATIVOS (flechas + un tab-stop). */
+.zones {
   display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  /* Full-bleed: cancela el padding de <main> para deslizar de borde a borde, y
+     re-añade padding interior para alinear el primer/último chip con el contenido
+     y dejar aire a su sombra y anillo de foco (mismo patrón que .header). */
+  margin-inline: calc(-1 * var(--space-4));
+  padding: var(--space-1) var(--space-4);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.zones::-webkit-scrollbar {
+  display: none; /* WebKit/Blink: sin barra, sigue deslizable */
+}
+
+/* Chip = pegatina: contorno de tinta + sombra pequeña; elegido = pegatina
+   amarilla que se pega al papel (pierde sombra). Mismo vocabulario que los chips
+   de continente del casual. */
+.chip {
+  position: relative;
+  flex: none;
+  scroll-snap-align: start;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  width: 100%;
   min-height: var(--tap-min);
-  padding: var(--space-2) var(--space-4);
-  cursor: pointer;
+  padding: var(--space-1) var(--space-3);
+  white-space: nowrap;
+  background: var(--c-surface);
+  border: var(--border-mid) solid var(--c-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-thumb);
   font-family: var(--font-display);
-  font-size: var(--text-base);
-  font-weight: var(--weight-medium);
-  line-height: var(--leading-snug);
-  color: var(--c-ink);
-  transition: background-color var(--dur-fast) var(--ease-standard);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--c-ink-2);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
+.chip:hover {
+  color: var(--c-ink);
+  transform: translate(-1px, -1px);
+}
+
+/* Radio nativo oculto pero focusable (estado por :has(:checked)). */
 .radio {
   position: absolute;
   width: 1px;
@@ -155,62 +163,67 @@
   opacity: 0;
 }
 
-.zoneRow::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  translate: 0 -50%;
-  width: var(--hoist-width);
-  height: 18px;
-  border-radius: 0 2px 2px 0;
-  background: var(--c-border-strong);
-  transition: background-color var(--dur-fast) var(--ease-standard),
-    height var(--dur-fast) var(--ease-standard);
+.chip:has(:checked),
+.chip:has(:checked):hover {
+  background: var(--c-marker);
+  color: var(--c-on-marker);
+  font-weight: var(--weight-bold);
+  transform: none;
+  box-shadow: none;
 }
 
-.zoneRow:hover {
-  background: var(--c-surface-2);
+/* Foco de teclado: anillo de tinta grueso (el navegador desliza el chip a la
+   vista al mover la selección con flechas). */
+.chip:has(:focus-visible) {
+  outline: var(--border-bold) solid var(--c-focus);
+  outline-offset: 2px;
 }
 
-.zoneRow:has(:checked) {
-  background: var(--c-accent-tint);
-  font-weight: var(--weight-semibold);
-}
-
-.zoneRow:has(:checked)::before {
-  background: var(--c-accent);
-  height: 26px;
-}
-
-.zoneRow:has(:focus-visible) {
-  box-shadow: inset 0 0 0 2px var(--c-focus);
-}
-
-/* Silueta de zona (mask + currentColor), como en el competitivo. */
-.zoneShape {
+/* Silueta de zona (mask + currentColor): sigue el color del texto del chip. */
+.chipShape {
   flex: none;
-  width: var(--shape-md);
-  height: var(--shape-md);
+  width: var(--shape-sm);
+  height: var(--shape-sm);
   background: currentColor;
-  color: var(--c-ink-3);
   -webkit-mask: var(--shape-src) center / contain no-repeat;
   mask: var(--shape-src) center / contain no-repeat;
 }
 
-.isWorld .zoneShape {
-  color: var(--c-ink-2);
-}
-
-.zoneRow:has(:checked) .zoneShape {
+/* Globo de Global: la marca del álbum. Ámbar de acento en reposo (distintivo de
+   carta insignia); tinta sobre amarillo cuando el chip está elegido. */
+.chipGlobe {
+  flex: none;
+  width: var(--shape-sm);
+  height: var(--shape-sm);
   color: var(--c-accent);
 }
 
+.chip:has(:checked) .chipGlobe {
+  color: var(--c-on-marker);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip:hover {
+    transform: none;
+  }
+}
+
 /* ── Tabla de clasificación ────────────────────────────────────────────────── */
+.boardHead {
+  margin-bottom: var(--space-3);
+}
+
 .boardTitle {
   font-size: var(--text-lg);
   font-weight: var(--weight-display);
-  margin-bottom: var(--space-3);
+}
+
+/* Explicación de la mecánica de Global (completar el álbum). */
+.boardHint {
+  margin-top: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--c-ink-3);
 }
 
 .boardMode {
@@ -264,12 +277,27 @@
   white-space: nowrap;
 }
 
+/* Celda de puntaje (tercera columna): puntos + cobertura "N zonas" en Global. */
+.scoreCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
 .points {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
   font-weight: var(--weight-medium);
   color: var(--c-accent-ink);
+}
+
+/* Cobertura del álbum en Global: cuántas zonas suma el jugador. */
+.cover {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--c-ink-3);
 }
 
 /* Tu fila: pegatina amarilla tenue (el marcador de "elegido/tú" del álbum). */
