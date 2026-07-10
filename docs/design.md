@@ -1118,7 +1118,7 @@ Explorar"** (el enlace "Competir" desaparece: la pestaña lo reemplaza).
 El formulario de la Home original tal cual (Modo / Categorías / Preguntas / "Empezar"), sin hero.
 Cero cambios de lógica.
 
-### 19.4 Panel Competitivo (`CompetitivePanel`) — el libro de registro
+### 19.4 Panel Competitivo (`CompetitivePanel`) — el libro de registro *(retirado — ver §28)*
 Las 18 zonas dejan de ser cards sueltos (72px c/u) y pasan a **un solo card-ledger** con filas de
 44px separadas por línea capilar — la página entera pierde ~500px de alto:
 
@@ -1734,7 +1734,7 @@ tamaño y desplazamiento:
   segmento elegido. El thumb sigue mostrando la selección (pegatina amarilla + `--c-on-marker` en el
   texto). Digno.
 
-## 26.3 Pestañas de carpeta: el **balancín de pegatina** (`PlayPage`)
+## 26.3 Pestañas de carpeta: el **balancín de pegatina** (`PlayPage`) *(retirado — ver §28)*
 
 Las versiones previas distinguían la pestaña activa por una barra de acento (§19.2) o por una barra que
 **resbalaba** de una pestaña a otra. La versión vigente lo convierte en un **balancín de pegatinas**: la
@@ -2038,3 +2038,30 @@ EDICIÓN DE BOLSILLO en `--c-accent-ink`, título display "Lleva la guía contig
 aviso, no la acción principal de la página). Cierre × con caja táctil de 44px (margen
 negativo). Cero tokens nuevos. Reduced-motion: hereda el reset global (disclosure y chevron
 instantáneos).
+
+---
+
+# 28 · Consolidación del competitivo — Jugar casual + módulo Competir
+
+**Decisión (2026-07-10)**: con el CTA de partida viviendo junto al ranking, la selección de zona
+duplicada de Jugar>Competitivo quedaba en desuso. Se consolida: **una sola vista para comparar
+récord, ver el top y jugar la zona**.
+
+- **Jugar (`/`)**: solo el casual. Las pestañas de carpeta y su balancín (§19.2, §26.3) se retiran
+  de `PlayPage`; la spec queda como historia de diseño. `/competitivo` **redirige** a `/ranking`
+  (enlaces guardados no se rompen).
+- **Competitivo (`/ranking`)**: el viejo módulo Ranking absorbe el rol del panel §19.4. Nav
+  **"Jugar · Competir · Explorar"**; h1 **"Competitivo"**, eyebrow "Contrarreloj · N países".
+  Conserva chips de zona + switch Mixto|Escrito + board, y suma: `modeHint` (segundos por pregunta,
+  de `timeLimitFor`), **barra sticky "Comenzar"** (misma anatomía §26.4.5; deshabilitada en Global
+  con hint "Elige una zona para competir.", con zona el hint canta "Zona · N preguntas"), y línea
+  "Tu récord local aquí: …" cuando no hay fila personal del servidor. La URL **no** cambia (el
+  `redirectTo` del OAuth apunta a `/ranking`). Zona y modo son **deep-linkables**:
+  `?zona=<id>&modo=escrito` (canónico sin params = Global + Mixto; cambios con `replace`, sin
+  apilar historial).
+- **Mis récords (`/records`)**: heredero del ledger §19.4 en modo **consulta** — 18 zonas × columnas
+  Mixto|Escrito con las marcas locales; cada fila es un **enlace** a `/ranking?zona=…` (sin radios
+  ni tick de hoist; hover tiñe la fila con `--c-accent-tint`). Enlazada desde el board
+  ("Ver todos mis récords"). El nav "Competir" queda activo también aquí.
+- La línea de sesión "Compites como {apodo}" del panel retirado **no migra**: en `/ranking` ya
+  existe la ProfileBar (apodo + editar + upgrade Google), que cumple ese rol.

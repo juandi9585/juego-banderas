@@ -6,6 +6,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { RankingPage } from '../RankingPage';
 import { OnlineProvider } from '../../features/online/OnlineProvider';
 import { RecordsProvider } from '../../features/records/RecordsProvider';
+import { GameProvider } from '../../features/game/GameProvider';
+import { countries } from '../../data/dataset';
 import { getSupabase } from '../../lib/supabase';
 import type { GlobalLeaderboardRow, LeaderboardRow } from '../../features/online/types';
 
@@ -71,12 +73,14 @@ function fakeProfileClient(rpc: Record<string, unknown[]>): SupabaseClient {
   } as unknown as SupabaseClient;
 }
 
-function renderRanking() {
+function renderRanking(initialEntry = '/ranking') {
   return render(
-    <MemoryRouter initialEntries={['/ranking']}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <RecordsProvider>
         <OnlineProvider>
-          <RankingPage />
+          <GameProvider countries={countries}>
+            <RankingPage />
+          </GameProvider>
         </OnlineProvider>
       </RecordsProvider>
     </MemoryRouter>,
@@ -120,7 +124,7 @@ describe('RankingPage (smoke)', () => {
     mockGetSupabase.mockReturnValue(null);
     renderRanking();
 
-    expect(screen.getByRole('heading', { name: 'Ranking' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Competitivo' })).toBeInTheDocument();
     expect(screen.getByText('El ranking necesita conexión.')).toBeInTheDocument();
     // Chips = radios NATIVOS; Global es la carta insignia y la selección inicial.
     expect(screen.getByRole('radio', { name: 'Global' })).toBeChecked();
@@ -207,5 +211,37 @@ describe('RankingPage (smoke)', () => {
     // Prellenado con el apodo actual y con el aviso del cambio de número.
     expect(screen.getByLabelText('Apodo')).toHaveValue('JD');
     expect(screen.getByText(/tu número # cambiará/)).toBeInTheDocument();
+  });
+
+  it('CTA Comenzar: deshabilitado en Global, se habilita al elegir una zona', async () => {
+    const user = userEvent.setup();
+    mockGetSupabase.mockReturnValue(null);
+    renderRanking();
+
+    // Global es agregado, no jugable: el CTA espera una zona concreta.
+    const comenzar = screen.getByRole('button', { name: 'Comenzar' });
+    expect(comenzar).toBeDisabled();
+    expect(screen.getByText('Elige una zona para competir.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: 'Europa' }));
+    expect(comenzar).toBeEnabled();
+    // El nº de preguntas honesto (min(20, pool)) se canta dos veces: en la
+    // cabecera del board y en el hint del CTA.
+    expect(screen.getByText('Partida de 20 preguntas.')).toBeInTheDocument();
+    expect(screen.getByText('Europa · 20 preguntas')).toBeInTheDocument();
+  });
+
+  it('deep link ?zona=&modo=: preselecciona zona y modo desde la URL', () => {
+    mockGetSupabase.mockReturnValue(null);
+    renderRanking('/ranking?zona=caribe&modo=escrito');
+
+    expect(screen.getByRole('radio', { name: 'Caribe' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Escrito' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    // Pool del Caribe = 13 < 20: ambos hints recortan al pool.
+    expect(screen.getByText('Partida de 13 preguntas.')).toBeInTheDocument();
+    expect(screen.getByText('Caribe · 13 preguntas')).toBeInTheDocument();
   });
 });

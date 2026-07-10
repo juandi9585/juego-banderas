@@ -1,12 +1,12 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { SoundToggle } from './SoundToggle';
 import styles from './AppHeader.module.css';
 
 export function AppHeader() {
-  // "Jugar" cubre el módulo entero: casual (/) y competitivo (/competitivo).
-  // "Ranking" es el tercer enlace (§19.1): consultar clasificaciones no es jugar.
+  // "Jugar" es el casual (/); "Competir" cubre el módulo competitivo entero:
+  // clasificación + partida (/ranking) y récords propios (/records).
   const { pathname } = useLocation();
-  const playActive = pathname === '/' || pathname === '/competitivo';
+  const competeActive = pathname === '/ranking' || pathname === '/records';
 
   return (
     <header className={styles.header}>
@@ -16,18 +16,23 @@ export function AppHeader() {
           <NavLink
             to="/"
             end
-            className={playActive ? `${styles.link} ${styles.active}` : styles.link}
-          >
-            Jugar
-          </NavLink>
-          <NavLink
-            to="/ranking"
             className={({ isActive }) =>
               isActive ? `${styles.link} ${styles.active}` : styles.link
             }
           >
-            Ranking
+            Jugar
           </NavLink>
+          {/* Link plano (no NavLink): el activo cubre /ranking Y /records, y
+              NavLink solo emite aria-current cuando SU ruta matchea. */}
+          <Link
+            to="/ranking"
+            aria-current={competeActive ? 'page' : undefined}
+            className={
+              competeActive ? `${styles.link} ${styles.active}` : styles.link
+            }
+          >
+            Competir
+          </Link>
           <NavLink
             to="/explorar"
             className={({ isActive }) =>

@@ -1,0 +1,149 @@
+/* Mis récords — el ledger del retirado panel Jugar>Competitivo, en modo
+   consulta: mismas filas de hairline y cifras en columna, pero cada fila es un
+   ENLACE a la clasificación de su zona (sin radios ni tick de hoist). */
+.page {
+  display: grid;
+  gap: var(--space-5);
+}
+
+/* Masthead con trama de puntos (mismo patrón que Jugar y Competitivo). */
+.header {
+  padding: var(--space-5) var(--space-4);
+  margin-inline: calc(-1 * var(--space-4));
+  background-image: var(--graticule);
+  background-size: var(--graticule-size);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--c-accent-ink);
+  margin-bottom: var(--space-1);
+}
+
+.title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-display);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-normal);
+}
+
+.hint {
+  color: var(--c-ink-2);
+  font-size: var(--text-sm);
+  max-width: 44ch;
+}
+
+/* ── Ledger ──────────────────────────────────────────────────────────────── */
+.ledger {
+  background: var(--c-surface);
+  border: var(--border-mid) solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden; /* clipa fondos de hover a la forma del card */
+}
+
+/* Línea capilar entre TODAS las filas (cabeceras incluidas). */
+.ledger > * + * {
+  border-top: var(--border-thin) solid var(--c-border);
+}
+
+/* Retícula compartida por cabecera y filas: zona elástica + dos columnas
+   numéricas fijas (los números quedan en columna, como un libro de registro). */
+.colHead,
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 4.5rem 4.5rem;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+}
+
+.colHead {
+  padding-block: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--c-ink-3);
+}
+
+.colNum {
+  text-align: right;
+}
+
+/* Subcabecera de grupo (Continentes / Sectores): banda hundida. */
+.groupRow {
+  padding: var(--space-1) var(--space-4);
+  background: var(--c-surface-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--c-ink-3);
+}
+
+/* Fila-zona: enlace a /ranking?zona=… (tinta normal, sin subrayado; el hover
+   tiñe la fila entera, como una fila de tabla interactiva). */
+.row {
+  min-height: var(--tap-min);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--dur-fast) var(--ease-standard);
+}
+
+.row:hover {
+  background: var(--c-accent-tint);
+}
+
+.row:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--c-focus);
+}
+
+.zone {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-snug);
+}
+
+/* Silueta de zona (§24.1): teñido por máscara (mask + background currentColor).
+   Reposo Pizarra tenue; Mundo un punto más presente. */
+.zoneShape {
+  flex: none;
+  width: var(--shape-md);
+  height: var(--shape-md);
+  background: currentColor;
+  color: var(--c-ink-3);
+  -webkit-mask: var(--shape-src) center / contain no-repeat;
+  mask: var(--shape-src) center / contain no-repeat;
+}
+
+.row.isWorld .zoneShape {
+  color: var(--c-ink-2);
+}
+
+/* Celdas de récord alineadas a la derecha (una por modo). */
+.cellSlot {
+  text-align: right;
+}
+
+.cellRecord {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-accent-ink); /* la cifra premiada, en latón */
+}
+
+.cellRecord.isEmpty {
+  color: var(--c-ink-3);
+}

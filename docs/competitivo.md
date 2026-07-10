@@ -337,6 +337,8 @@ Con `min(20, pool)` no hay repetición → **no existe `buildCompetitiveQuiz`**:
 - `CompetitivePage` (ruta `/competitivo`): selección **simple** (radio) de las 18 categorías
   agrupadas, con países / nº de preguntas / récord por opción; CTA que arranca
   `{ mode: 'mixto', categories: [id], questionCount: 20, competitive: { seed: randomSeed() } }`.
+  *(2026-07-10: esta UI se consolidó en `/ranking` — módulo Competitivo, design.md §28;
+  `/competitivo` redirige allí y los récords propios viven en `/records`.)*
 - `QuestionCountdown` en `GamePage` (solo competitivo): 10 s por pregunta contra
   `SCORE_TIME_LIMIT_MS`, calculado en cada tick desde `Date.now() − questionStartedAt` (reloj de
   pared: volver de background no regala tiempo); al agotarse llama `timeoutCurrent()`.

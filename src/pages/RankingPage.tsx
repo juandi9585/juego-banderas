@@ -1,5 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getSupabase } from '../lib/supabase';
+import { useGame } from '../features/game/useGame';
 import { useOnline } from '../features/online/useOnline';
 import { useRecords } from '../features/records/useRecords';
 import {
@@ -13,8 +15,14 @@ import { formatDiscriminator } from '../features/online/nickname';
 import type { OnlineMode } from '../features/online/types';
 import { SegmentedControl, type SegmentOption } from '../components/SegmentedControl';
 import { Button } from '../components/Button';
-import { TOTAL_COUNTRIES } from '../data/dataset';
-import { GAME_CATEGORIES, type CategoryId } from '../features/game/categories';
+import { countries, TOTAL_COUNTRIES } from '../data/dataset';
+import {
+  GAME_CATEGORIES,
+  filterByCategories,
+  type CategoryId,
+} from '../features/game/categories';
+import { randomSeed } from '../lib/random';
+import { timeLimitFor } from '../features/game/score';
 import { TrophyIcon } from '../components/TrophyIcon';
 import styles from './RankingPage.module.css';
 
@@ -23,8 +31,35 @@ const MODE_OPTIONS: SegmentOption<OnlineMode>[] = [
   { value: 'type-name', label: 'Escrito' },
 ];
 
+// Qué se hace en cada modo; los segundos por pregunta salen de timeLimitFor
+// (única fuente) para que el copy nunca se desincronice del countdown real.
+const MODE_HINT: Record<OnlineMode, string> = {
+  mixto: 'Toca la opción correcta.',
+  'type-name': 'Escribe el nombre de cada país.',
+};
+
+// Partida competitiva: min(20, pool), récord por (categoría, modo).
+const MAX_QUESTIONS = 20;
+
+// Tamaño del pool por categoría (una vez; el dataset no cambia en runtime). Con
+// él se calcula el nº de preguntas honesto del hint: q = min(20, pool).
+const POOL_SIZE: Record<string, number> = Object.fromEntries(
+  GAME_CATEGORIES.map((cat) => [cat.id, filterByCategories([cat.id], countries).length]),
+);
+
+const questionsFor = (id: CategoryId) => Math.min(MAX_QUESTIONS, POOL_SIZE[id]);
+
 // Selección del selector de zona: una categoría real o la vista agregada Global.
 type ZoneSel = CategoryId | 'global';
+
+// Zona y modo viven en la URL (?zona=europa&modo=escrito): la página es
+// deep-linkable desde Mis récords y el resultado de una partida. 'escrito' es
+// el alias legible de 'type-name'; valores desconocidos caen al por defecto.
+const ZONE_IDS = new Set<string>(GAME_CATEGORIES.map((c) => c.id));
+const parseZone = (raw: string | null): ZoneSel =>
+  raw != null && ZONE_IDS.has(raw) ? (raw as CategoryId) : 'global';
+const parseMode = (raw: string | null): OnlineMode =>
+  raw === 'escrito' ? 'type-name' : 'mixto';
 
 // Orden de los chips: Global (insignia) · Mundo · continentes · sectores.
 const CONTINENTES = GAME_CATEGORIES.filter(
@@ -78,21 +113,50 @@ function localGlobal(records: Records, mode: OnlineMode): { points: number; zone
 }
 
 /**
- * Módulo Ranking (docs/roadmap.md §C, design.md §19.1): tercer enlace del nav.
- * Selector de zona en fila de chips (Global · Mundo · continentes · sectores) +
- * switch Mixto | Escrito. Global agrega tus mejores marcas por zona (mecánica de
- * completar el álbum); las zonas muestran el top por (zona, modo). En ambos: tu
- * puesto aunque no estés en el top. Estados: cargando / vacío / error / sin
- * conexión (aviso + récords LOCALES) / recarga al volver la red.
+ * Módulo Competitivo (antes "Ranking"; docs/design.md §19.4): el hub donde se
+ * compite Y se consulta. Selector de zona en fila de chips (Global · Mundo ·
+ * continentes · sectores) + switch Mixto | Escrito; el board muestra el top de
+ * la zona con tu puesto (o tu récord local si no publicas), y el CTA sticky
+ * "Comenzar" arranca una partida de esa misma (zona, modo) — la vista de
+ * selección duplicada de Jugar>Competitivo se retiró a favor de esta página.
+ * Global agrega tus mejores marcas por zona (mecánica de completar el álbum) y
+ * no es jugable. Estados: cargando / vacío / error / sin conexión (aviso +
+ * récords LOCALES) / recarga al volver la red.
  */
 export function RankingPage() {
   const online = useOnline();
   const records = useRecords();
+  const navigate = useNavigate();
+  const { startGame } = useGame();
 
-  const [mode, setMode] = useState<OnlineMode>('mixto');
-  // Global es la vista por defecto al entrar (la carta insignia).
-  const [zone, setZone] = useState<ZoneSel>('global');
+  // Zona y modo canónicos en la URL; /ranking a secas = Global + Mixto.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const zone = parseZone(searchParams.get('zona'));
+  const mode = parseMode(searchParams.get('modo'));
   const [reloadKey, setReloadKey] = useState(0);
+
+  // replace: cambiar de chip/modo no apila historial (atrás sale de la página).
+  function updateParams(z: ZoneSel, m: OnlineMode) {
+    const params = new URLSearchParams();
+    if (z !== 'global') params.set('zona', z);
+    if (m === 'type-name') params.set('modo', 'escrito');
+    setSearchParams(params, { replace: true });
+  }
+  const setZone = (z: ZoneSel) => updateParams(z, mode);
+  const setMode = (m: OnlineMode) => updateParams(zone, m);
+
+  function handleStart() {
+    if (zone === 'global') return; // Global es agregado, no zona jugable
+    startGame({
+      mode,
+      categories: [zone], // exactamente una (invariante): clave del récord
+      questionCount: MAX_QUESTIONS, // el motor recorta al pool → min(20, pool)
+      competitive: { seed: randomSeed() },
+    });
+    // Cross-fade al arrancar la partida (§23.5); corte seco si no hay soporte
+    // o reduced-motion (el CSS salta la animación).
+    navigate('/jugar', { viewTransition: true });
+  }
 
   // Board público (top): su estado NO depende del fetch personal.
   const [boardStatus, setBoardStatus] = useState<BoardStatus>('loading');
@@ -203,16 +267,19 @@ export function RankingPage() {
   const isGlobal = zone === 'global';
   const inTop = playerId ? rows.some((r) => r.player_id === playerId) : false;
   const showYourRow = online.profile != null && personal != null && !inTop;
+  // Tu marca LOCAL de la zona: la comparación récord-vs-top funciona aunque no
+  // publiques online (sin apodo o con el fetch personal caído).
+  const localBest = isGlobal ? null : records.getBest(zone, mode);
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Clasificación · {TOTAL_COUNTRIES} países</p>
-          <h1 className={styles.title}>Ranking</h1>
+          <p className={styles.eyebrow}>Contrarreloj · {TOTAL_COUNTRIES} países</p>
+          <h1 className={styles.title}>Competitivo</h1>
         </div>
-        {/* Emblema del módulo: el mismo trofeo de la pestaña Competitivo, como
-            pegatina ladeada (patrón del masthead de Jugar). */}
+        {/* Emblema del módulo: trofeo como pegatina ladeada (patrón del
+            masthead de Jugar). */}
         <span className={styles.emblem} aria-hidden="true">
           <TrophyIcon />
         </span>
@@ -220,12 +287,19 @@ export function RankingPage() {
 
       {online.enabled && !online.loading && <ProfileBar />}
 
-      <SegmentedControl
-        label="Modo de juego"
-        options={MODE_OPTIONS}
-        value={mode}
-        onChange={setMode}
-      />
+      <div>
+        <SegmentedControl
+          label="Modo de juego"
+          options={MODE_OPTIONS}
+          value={mode}
+          onChange={setMode}
+        />
+        {/* aria-live: al cambiar de modo, el lector anuncia qué se juega y con
+            cuánto tiempo (el hint es la única descripción del modo elegido). */}
+        <p className={styles.modeHint} aria-live="polite">
+          {MODE_HINT[mode]} {timeLimitFor(mode) / 1000} segundos por pregunta.
+        </p>
+      </div>
 
       {/* Selector de zona: fila de chips-pegatina deslizable, radios NATIVOS
           (flechas + un solo tab-stop). Global va primero, con el glifo de marca. */}
@@ -248,9 +322,15 @@ export function RankingPage() {
               · {mode === 'mixto' ? 'Mixto' : 'Escrito'}
             </span>
           </h2>
-          {isGlobal && (
+          {/* La línea de ayuda del board: en Global explica la mecánica del
+              álbum; en una zona canta el tamaño de la partida (min(20, pool)). */}
+          {isGlobal ? (
             <p className={styles.boardHint}>
               Tu mejor marca en cada zona, sumada. Cubre más zonas para subir.
+            </p>
+          ) : (
+            <p className={styles.boardHint}>
+              Partida de {questionsFor(zone)} preguntas.
             </p>
           )}
         </div>
@@ -327,8 +407,33 @@ export function RankingPage() {
               )}
             </ol>
           )}
+
+          {/* Sin fila personal del servidor (sin apodo, o su fetch cayó): tu
+              récord local mantiene viva la comparación con el top. */}
+          {boardStatus === 'ok' && !isGlobal && !inTop && personal == null && localBest && (
+            <p className={styles.localRecord}>
+              Tu récord local aquí: <strong>{fmt(localBest.points)} pts</strong>
+            </p>
+          )}
         </div>
       </section>
+
+      <Link to="/records" className={styles.recordsLink}>
+        Ver todos mis récords
+      </Link>
+
+      {/* CTA sticky (migrado de Jugar>Competitivo): arranca una partida de la
+          (zona, modo) que se está consultando. Global no es jugable. */}
+      <div className={styles.startBar}>
+        <Button onClick={handleStart} disabled={isGlobal}>
+          Comenzar
+        </Button>
+        <p className={styles.startHint}>
+          {isGlobal
+            ? 'Elige una zona para competir.'
+            : `${zoneLabel(zone)} · ${questionsFor(zone)} preguntas`}
+        </p>
+      </div>
     </div>
   );
 }

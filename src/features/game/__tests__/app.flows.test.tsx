@@ -514,19 +514,20 @@ describe('Modo competitivo (récords locales)', () => {
   }
 
   it('elegir categoría → timeout de una pregunta → récord; una partida peor no lo pisa', () => {
+    // La vieja ruta de la pestaña redirige al módulo Competitivo (/ranking).
     window.history.pushState({}, '', '/competitivo');
     render(<App />);
 
-    // Página del competitivo: hero de marca + radiogroup de zonas.
-    expect(screen.getByRole('heading', { name: 'Contrarreloj' })).toBeInTheDocument();
+    // Página del competitivo: masthead + chips de zona.
+    expect(screen.getByRole('heading', { name: 'Competitivo' })).toBeInTheDocument();
     expect(
-      screen.getByRole('radiogroup', { name: 'Elige dónde competir' }),
+      screen.getByRole('radiogroup', { name: 'Zona del ranking' }),
     ).toBeInTheDocument();
 
-    // CTA deshabilitada hasta elegir.
+    // CTA deshabilitada mientras la selección es Global (agregado, no jugable).
     const comenzar = screen.getByRole('button', { name: 'Comenzar' });
     expect(comenzar).toBeDisabled();
-    expect(screen.getByText('Primero elige dónde competir.')).toBeInTheDocument();
+    expect(screen.getByText('Elige una zona para competir.')).toBeInTheDocument();
 
     // Elegir "Asia Meridional" (pool 9 → 9 preguntas; partida corta pero justa).
     fireEvent.click(screen.getByRole('radio', { name: /Asia Meridional/ }));
@@ -585,7 +586,7 @@ describe('Modo competitivo (récords locales)', () => {
   });
 
   it('el récord persiste tras "recargar" (remontar la app relee localStorage)', () => {
-    window.history.pushState({}, '', '/competitivo');
+    window.history.pushState({}, '', '/ranking');
     const first = render(<App />);
 
     // Partida en Asia Meridional acertando las 9 → primer récord.
@@ -602,25 +603,24 @@ describe('Modo competitivo (récords locales)', () => {
     )[RECORD_KEY].points;
     expect(points).toBeGreaterThan(0);
 
-    // "Recargar": desmontar TODA la app y montarla de cero. El nuevo
-    // RecordsProvider relee localStorage al montar (useState(loadRecords)).
+    // "Recargar": desmontar TODA la app y montarla de cero en Mis récords. El
+    // nuevo RecordsProvider relee localStorage al montar (useState(loadRecords)).
     first.unmount();
-    window.history.pushState({}, '', '/competitivo');
+    window.history.pushState({}, '', '/records');
     render(<App />);
 
-    // La fila de Asia Meridional muestra el récord persistido en su celda del
-    // ledger (la cifra en latón), no el "—" de "aún sin récord".
-    const row = screen
-      .getByRole('radio', { name: /Asia Meridional/ })
-      .closest('label')!;
+    // La fila de Asia Meridional muestra el récord persistido en su columna
+    // Mixto (la cifra en latón); la de Escrito sigue vacía ("—": los récords
+    // por modo son independientes).
+    const row = screen.getByRole('link', { name: /Asia Meridional/ });
     expect(
       within(row).getByText(points.toLocaleString('es-ES')),
     ).toBeInTheDocument();
-    expect(within(row).queryByText('—')).toBeNull();
+    expect(within(row).getAllByText('—')).toHaveLength(1);
   });
 
   it('modo escrito: 15 s por pregunta y récord independiente del mixto', () => {
-    window.history.pushState({}, '', '/competitivo');
+    window.history.pushState({}, '', '/ranking');
     render(<App />);
 
     // Cambiar al modo escrito: el hint describe qué se juega y con cuánto tiempo.
@@ -676,7 +676,8 @@ describe('Modo competitivo (récords locales)', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AISLAMIENTO casual ↔ competitivo. El casual queda INTACTO: sin countdown de
-// 10 s, sin timeout y sin récords, aunque se haya visitado antes /competitivo.
+// 10 s, sin timeout y sin récords, aunque se haya visitado antes el módulo
+// Competitivo (/ranking).
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Casual: aislamiento del competitivo (sin countdown ni récords)', () => {
   it('el casual NO monta el countdown de 10 s (sin glifo ◷ ni aviso)', async () => {
@@ -691,14 +692,14 @@ describe('Casual: aislamiento del competitivo (sin countdown ni récords)', () =
     expect(screen.queryByText('Quedan 3 segundos.')).toBeNull();
   });
 
-  it('visitar /competitivo y volver a jugar casual no arrastra la config competitiva', async () => {
+  it('visitar el módulo Competitivo y volver a jugar casual no arrastra la config competitiva', async () => {
     const user = userEvent.setup();
     render(<App />);
 
-    // Visitar la pestaña Competitivo (sin empezar) y volver con el nav Jugar.
-    await user.click(screen.getByRole('link', { name: 'Competitivo' }));
+    // Visitar el módulo Competitivo (sin empezar) y volver con el nav Jugar.
+    await user.click(screen.getByRole('link', { name: 'Competir' }));
     expect(
-      screen.getByRole('heading', { name: 'Contrarreloj' }),
+      screen.getByRole('heading', { name: 'Competitivo' }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: 'Jugar' }));
 

@@ -127,6 +127,14 @@
   color: var(--c-error-ink);
 }
 
+/* Descripción de una línea del modo elegido (bajo el SegmentedControl). */
+.modeHint {
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--c-ink-3);
+}
+
 /* ── Selector de zona: fila de chips-pegatina deslizable ─────────────────────
    Reemplaza al ledger vertical (empujaba la tabla fuera del pliegue). Una sola
    fila horizontal con scroll oculto pero deslizable; scroll-snap suave. Los
@@ -375,4 +383,53 @@
 .localRecord {
   font-size: var(--text-sm);
   color: var(--c-ink-2);
+}
+
+/* Enlace sobrio a Mis récords, centrado bajo el board. */
+.recordsLink {
+  justify-self: center;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--c-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.recordsLink:hover {
+  color: var(--c-ink);
+}
+
+/* ── Barra CTA sticky al fondo, a sangre, con degradado de papel (migrada del
+   panel Jugar>Competitivo, hoy retirado). ─────────────────────────────────── */
+.startBar {
+  position: sticky;
+  bottom: 0;
+  margin-inline: calc(-1 * var(--space-4));
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  /* Barra OPACA: con un gradiente interno el board scrolleado se transparentaba
+     justo debajo del hint. */
+  background: var(--c-bg);
+}
+
+/* El desvanecido queda como visera POR ENCIMA de la barra: el contenido se
+   funde antes de tocar el CTA, sin robarle opacidad a la barra. */
+.startBar::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  height: var(--space-4);
+  background: linear-gradient(to top, var(--c-bg), transparent);
+  pointer-events: none;
+}
+
+.startHint {
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--c-ink-3);
+  text-align: center;
 }

@@ -20,7 +20,9 @@
 }
 
 /* ── Barra CTA sticky al fondo, a sangre, con degradado de papel (§26.4.5).
-   Idéntica a CompetitivePanel.startBar; el helper vivo del pool va debajo. ─── */
+   Variante del patrón sticky-CTA: aquí el degradado basta porque arriba de la
+   barra solo asoma el Button (opaco); RankingPage.startBar necesitó fondo
+   opaco + visera ::before al llevar texto en su borde superior. ─── */
 .startBar {
   position: sticky;
   bottom: 0;

@@ -226,10 +226,17 @@ export function ResultPage() {
         <Button
           variant="secondary"
           onClick={() => {
+            // Vuelve al módulo del que salió la partida. En competitivo, con la
+            // (zona, modo) recién jugadas en la URL: aterrizas en TU board, con
+            // la marca fresca contra el top.
+            let destino = '/';
+            if (isCompetitive) {
+              const zona = result.config.categories[0];
+              const modo = result.config.mode === 'type-name' ? '&modo=escrito' : '';
+              destino = zona != null ? `/ranking?zona=${zona}${modo}` : '/ranking';
+            }
             reset();
-            // Vuelve a la pestaña de la que salió la partida (casual o
-            // competitivo) dentro del módulo Jugar.
-            navigate(isCompetitive ? '/competitivo' : '/', { viewTransition: true });
+            navigate(destino, { viewTransition: true });
           }}
         >
           Cambiar modo
