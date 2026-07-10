@@ -28,6 +28,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Los secrets viven en el environment "Production" del repo (Settings →
+    # Environments); sin declararlo aquí, el job no los ve.
+    environment: Production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
