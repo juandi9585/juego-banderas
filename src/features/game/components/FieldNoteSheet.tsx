@@ -31,6 +31,13 @@ export function FieldNoteSheet({ question, answer, isLast, onNext }: Props) {
   // cambian el glifo (reloj ◷) y el copy respecto al fallo por toque.
   const timedOut = answer.timedOut === true;
 
+  // En nombre→bandera el enunciado ya nombra al país (y la ficha de abajo lo
+  // repite), así que el fallo no lo re-anuncia. Tampoco se nombra la bandera
+  // pulsada: los distractores salen del pool completo y ese país puede caer
+  // como pregunta más adelante en la misma ronda (ventaja, sobre todo en
+  // competitivo).
+  const nameInPrompt = question.mode === 'name-to-flag';
+
   // 2 datos al azar del pool del país, estables durante la vida de esta
   // respuesta: el sheet se monta una vez por respuesta (key={question.id} en el
   // padre), así el inicializador corre una sola vez y varía entre partidas.
@@ -119,9 +126,15 @@ export function FieldNoteSheet({ question, answer, isLast, onNext }: Props) {
             {correct ? (
               '¡Correcto!'
             ) : timedOut ? (
-              <>
-                Se acabó el tiempo — era <strong>{country.name}</strong>
-              </>
+              nameInPrompt ? (
+                'Se acabó el tiempo'
+              ) : (
+                <>
+                  Se acabó el tiempo — era <strong>{country.name}</strong>
+                </>
+              )
+            ) : nameInPrompt ? (
+              'Esa no era su bandera'
             ) : (
               <>
                 Era <strong>{country.name}</strong>

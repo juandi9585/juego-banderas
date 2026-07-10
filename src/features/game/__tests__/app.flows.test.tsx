@@ -159,7 +159,13 @@ describe('Modo nombre → bandera', () => {
     )!;
     await user.click(wrong);
 
-    expect(screen.getByText(/^Era/)).toHaveTextContent(correctName);
+    // Sin "Era {país}": el enunciado ya nombra al país. Tampoco se nombra la
+    // bandera pulsada (revelaría un país que puede caer luego en la ronda).
+    expect(screen.getByText('Esa no era su bandera')).toBeInTheDocument();
+    // La nota de campo sí muestra el país correcto (ficha con su bandera).
+    expect(
+      within(screen.getByText('Nota de campo').closest('aside')!).getByText(correctName),
+    ).toBeInTheDocument();
     expect(wrong.textContent).toContain('✕'); // elegida marcada incorrecta
     expect(correct.textContent).toContain('✓'); // la correcta se resalta
   });
