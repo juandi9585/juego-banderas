@@ -225,10 +225,11 @@ describe('RankingPage (smoke)', () => {
 
     await user.click(screen.getByRole('radio', { name: 'Europa' }));
     expect(comenzar).toBeEnabled();
-    // El nº de preguntas honesto (min(20, pool)) se canta dos veces: en la
-    // cabecera del board y en el hint del CTA.
+    // Con zona, el hint del CTA desaparece (cumplió su rol de explicar el
+    // deshabilitado); el nº de preguntas honesto (min(20, pool)) vive en la
+    // cabecera del board.
+    expect(screen.queryByText('Elige una zona para competir.')).not.toBeInTheDocument();
     expect(screen.getByText('Partida de 20 preguntas.')).toBeInTheDocument();
-    expect(screen.getByText('Europa · 20 preguntas')).toBeInTheDocument();
   });
 
   it('deep link ?zona=&modo=: preselecciona zona y modo desde la URL', () => {
@@ -240,8 +241,7 @@ describe('RankingPage (smoke)', () => {
       'aria-pressed',
       'true',
     );
-    // Pool del Caribe = 13 < 20: ambos hints recortan al pool.
+    // Pool del Caribe = 13 < 20: la cabecera del board recorta al pool.
     expect(screen.getByText('Partida de 13 preguntas.')).toBeInTheDocument();
-    expect(screen.getByText('Caribe · 13 preguntas')).toBeInTheDocument();
   });
 });

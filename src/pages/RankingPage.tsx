@@ -423,16 +423,16 @@ export function RankingPage() {
       </Link>
 
       {/* CTA sticky (migrado de Jugar>Competitivo): arranca una partida de la
-          (zona, modo) que se está consultando. Global no es jugable. */}
+          (zona, modo) que se está consultando. El hint solo existe en Global
+          (explica el CTA deshabilitado); con zona, la cabecera del board ya
+          canta zona, modo y nº de preguntas. */}
       <div className={styles.startBar}>
         <Button onClick={handleStart} disabled={isGlobal}>
           Comenzar
         </Button>
-        <p className={styles.startHint}>
-          {isGlobal
-            ? 'Elige una zona para competir.'
-            : `${zoneLabel(zone)} · ${questionsFor(zone)} preguntas`}
-        </p>
+        {isGlobal && (
+          <p className={styles.startHint}>Elige una zona para competir.</p>
+        )}
       </div>
     </div>
   );
