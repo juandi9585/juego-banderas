@@ -1,0 +1,65 @@
+# Deploy del backend Supabase al mergear a main (roadmap §C, decidido 2026-07-09:
+# CLI local durante el desarrollo → esta Action cuando estabiliza). Aplica las
+# migraciones pendientes y redespliega la Edge Function con el bundle del motor
+# RECIÉN generado (si el dataset o el motor cambian y el bundle no, el servidor
+# rechazaría partidas legítimas — por eso el paso engine:server es obligatorio).
+#
+# Secrets requeridos (Settings → Secrets and variables → Actions):
+#   SUPABASE_ACCESS_TOKEN  — token personal (supabase.com/dashboard/account/tokens)
+#   SUPABASE_DB_PASSWORD   — la database password del proyecto
+# Sin ellos el job se salta con un warning (no rompe main).
+name: Supabase deploy
+
+on:
+  push:
+    branches: [main]
+    # Solo cuando cambia el backend o el grafo del motor compartido que se
+    # bundlea para la Edge Function (engine-entry.ts importa de estas rutas).
+    paths:
+      - 'supabase/**'
+      - 'scripts/bundle-server-engine.mjs'
+      - 'src/features/game/**'
+      - 'src/features/records/records.ts'
+      - 'src/data/**'
+      - 'src/lib/random.ts'
+      - 'src/lib/text.ts'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: mpxpueujqvncjwvcxlzg
+    steps:
+      - name: Aviso si faltan secrets
+        if: env.SUPABASE_ACCESS_TOKEN == '' || env.SUPABASE_DB_PASSWORD == ''
+        run: echo "::warning::Faltan SUPABASE_ACCESS_TOKEN y/o SUPABASE_DB_PASSWORD; despliegue omitido."
+
+      - uses: actions/checkout@v4
+        if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_DB_PASSWORD != ''
+
+      - uses: actions/setup-node@v4
+        if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_DB_PASSWORD != ''
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Bundle del motor para la Edge Function
+        if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_DB_PASSWORD != ''
+        run: |
+          npm ci
+          npm run engine:server
+
+      - uses: supabase/setup-cli@v1
+        if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_DB_PASSWORD != ''
+        with:
+          version: latest
+
+      - name: Migraciones + Edge Function
+        if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_DB_PASSWORD != ''
+        run: |
+          supabase link --project-ref "$PROJECT_REF"
+          supabase db push --yes
+          supabase functions deploy submit-score --use-api
