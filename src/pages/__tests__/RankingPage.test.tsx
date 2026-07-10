@@ -46,6 +46,31 @@ function fakeSessionClient(rpc: Record<string, unknown[]>): SupabaseClient {
   } as unknown as SupabaseClient;
 }
 
+/**
+ * Cliente falso con sesión Y perfil ("JD" #42): cadena encadenable genérica
+ * (select/eq/match → maybeSingle) que resuelve por tabla — players devuelve el
+ * perfil; records, nada.
+ */
+function fakeProfileClient(rpc: Record<string, unknown[]>): SupabaseClient {
+  const session = { user: { id: 'u-google', email: 'jd@test.com', is_anonymous: false } };
+  const profile = { id: 'u-google', nickname: 'JD', discriminator: 42 };
+  const chain = (result: unknown) => {
+    const c: Record<string, unknown> = {};
+    for (const m of ['select', 'eq', 'match']) c[m] = () => c;
+    c.maybeSingle = async () => ({ data: result, error: null });
+    c.single = async () => ({ data: result, error: null });
+    return c;
+  };
+  return {
+    auth: {
+      getSession: async () => ({ data: { session }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    },
+    rpc: async (name: string) => ({ data: rpc[name] ?? [], error: null }),
+    from: (table: string) => chain(table === 'players' ? profile : null),
+  } as unknown as SupabaseClient;
+}
+
 function renderRanking() {
   return render(
     <MemoryRouter initialEntries={['/ranking']}>
@@ -162,5 +187,25 @@ describe('RankingPage (smoke)', () => {
     // copy de progreso ligado a la cuenta (no "en este dispositivo").
     expect(await screen.findByRole('dialog', { name: 'Elige tu apodo' })).toBeInTheDocument();
     expect(screen.getByText(/ligado a tu cuenta de Google/)).toBeInTheDocument();
+  });
+
+  it('con perfil, "Editar apodo" abre el sheet en modo edición, prellenado', async () => {
+    const user = userEvent.setup();
+    mockGetSupabase.mockReturnValue(fakeProfileClient({ get_global_leaderboard: [] }));
+    renderRanking();
+
+    // El perfil se muestra (apodo + #disc, único lugar del discriminador) y el
+    // sheet NO se abre solo (eso es solo para sesión sin perfil).
+    expect(await screen.findByText('JD')).toBeInTheDocument();
+    expect(screen.getByText('#0042')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Editar apodo' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Cambia tu apodo' });
+    expect(dialog).toBeInTheDocument();
+    // Prellenado con el apodo actual y con el aviso del cambio de número.
+    expect(screen.getByLabelText('Apodo')).toHaveValue('JD');
+    expect(screen.getByText(/tu número # cambiará/)).toBeInTheDocument();
   });
 });

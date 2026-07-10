@@ -17,12 +17,16 @@ import styles from './NicknameSheet.module.css';
  * restaura el foco al elemento que lo abrió al cerrar.
  */
 export function NicknameSheet() {
-  const { createProfile, closeOnboarding, hasSession, isAnonymous } = useOnline();
+  const { createProfile, updateProfile, closeOnboarding, hasSession, isAnonymous, profile } =
+    useOnline();
   // Con cuenta Google el progreso viaja con la cuenta; en anónimo (o antes de
   // crear la sesión) vive en este dispositivo hasta el upgrade.
   const googleAccount = hasSession && !isAnonymous;
+  // Con perfil existente el sheet es el EDITOR del apodo (mismo formulario,
+  // misma validación); sin perfil, el onboarding de siempre.
+  const editing = profile != null;
 
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState(profile?.nickname ?? '');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -60,7 +64,7 @@ export function NicknameSheet() {
       if (saving) return;
       setSaving(true);
       setError(null);
-      const res = await createProfile(value);
+      const res = await (editing ? updateProfile(value) : createProfile(value));
       if (res.ok) {
         closeOnboarding();
         return;
@@ -68,7 +72,7 @@ export function NicknameSheet() {
       setError(res.error ?? 'No se pudo guardar el apodo.');
       setSaving(false);
     },
-    [saving, createProfile, value, closeOnboarding],
+    [saving, editing, updateProfile, createProfile, value, closeOnboarding],
   );
 
   return createPortal(
@@ -83,12 +87,14 @@ export function NicknameSheet() {
       >
         <p className={styles.eyebrow}>Ranking</p>
         <h2 id="nickname-title" className={styles.title}>
-          Elige tu apodo
+          {editing ? 'Cambia tu apodo' : 'Elige tu apodo'}
         </h2>
         <p className={styles.lead}>
-          {googleAccount
-            ? 'Con un apodo apareces en la clasificación global. Tu progreso queda ligado a tu cuenta de Google.'
-            : 'Con un apodo apareces en la clasificación global. Tu progreso se guarda en este dispositivo.'}
+          {editing
+            ? 'Es tu nombre público en la clasificación. Si eliges uno distinto, tu número # cambiará.'
+            : googleAccount
+              ? 'Con un apodo apareces en la clasificación global. Tu progreso queda ligado a tu cuenta de Google.'
+              : 'Con un apodo apareces en la clasificación global. Tu progreso se guarda en este dispositivo.'}
         </p>
 
         <form className={styles.form} onSubmit={handleSubmit}>

@@ -15,6 +15,7 @@ import { SegmentedControl, type SegmentOption } from '../components/SegmentedCon
 import { Button } from '../components/Button';
 import { TOTAL_COUNTRIES } from '../data/dataset';
 import { GAME_CATEGORIES, type CategoryId } from '../features/game/categories';
+import { TrophyIcon } from '../components/TrophyIcon';
 import styles from './RankingPage.module.css';
 
 const MODE_OPTIONS: SegmentOption<OnlineMode>[] = [
@@ -206,8 +207,15 @@ export function RankingPage() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <p className={styles.eyebrow}>Clasificación · {TOTAL_COUNTRIES} países</p>
-        <h1 className={styles.title}>Ranking</h1>
+        <div>
+          <p className={styles.eyebrow}>Clasificación · {TOTAL_COUNTRIES} países</p>
+          <h1 className={styles.title}>Ranking</h1>
+        </div>
+        {/* Emblema del módulo: el mismo trofeo de la pestaña Competitivo, como
+            pegatina ladeada (patrón del masthead de Jugar). */}
+        <span className={styles.emblem} aria-hidden="true">
+          <TrophyIcon />
+        </span>
       </header>
 
       {online.enabled && !online.loading && <ProfileBar />}
@@ -382,6 +390,14 @@ function ProfileBar() {
       <div className={styles.profileId}>
         <span className={styles.profileNick}>{profile.nickname}</span>
         <span className={styles.profileDisc}>{formatDiscriminator(profile.discriminator)}</span>
+        {/* Reabre el sheet, que con perfil existente entra en modo edición. */}
+        <button
+          type="button"
+          className={`${styles.textLink} ${styles.profileEdit}`}
+          onClick={openOnboarding}
+        >
+          Editar apodo
+        </button>
       </div>
       {isAnonymous && (
         <div className={styles.profileActions}>

@@ -113,6 +113,32 @@ export async function insertProfile(
   return null;
 }
 
+/**
+ * Cambia el apodo del perfil (UPDATE de la propia fila; RLS + grant de columna
+ * solo permiten escribir `nickname`). El trigger conserva el discriminador si
+ * el apodo no cambió y asigna uno NUEVO si sí (estilo Discord). Reintenta ante
+ * colisión de carrera 23505 (al reintentar, el trigger reelige número).
+ */
+export async function updateNickname(
+  sb: SupabaseClient,
+  userId: string,
+  nickname: string,
+): Promise<PlayerProfile | null> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data, error } = await sb
+      .from('players')
+      .update({ nickname })
+      .eq('id', userId)
+      .select('id, nickname, discriminator')
+      .single();
+
+    if (!error && data) return data as PlayerProfile;
+    if (error?.code === '23505') continue; // carrera apodo#disc: reintentar
+    return null; // otro error (permisos, red): no insistir a ciegas
+  }
+  return null;
+}
+
 // ── Ranking (RPCs de lectura pública) ────────────────────────────────────────
 
 /** Top N de una (zona, modo). Errores → array vacío no; se propaga lanzando. */

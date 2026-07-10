@@ -30,6 +30,8 @@ export interface OnlineContextValue {
   submitResult: (result: GameResult) => Promise<SubmitOutcome>;
   /** Crea el perfil (apodo) con auth anónima si hace falta. */
   createProfile: (nickname: string) => Promise<{ ok: boolean; error?: string }>;
+  /** Cambia el apodo del perfil existente (apodo distinto ⇒ nuevo #número). */
+  updateProfile: (nickname: string) => Promise<{ ok: boolean; error?: string }>;
   /** Upgrade de anónimo a Google conservando el uid (y el historial). */
   linkGoogle: () => Promise<{ ok: boolean; error?: string }>;
   /** Inicia sesión con Google (volver a entrar en otro dispositivo). */

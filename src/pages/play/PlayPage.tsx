@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { countries, TOTAL_COUNTRIES } from '../../data/dataset';
 import { FlagImage } from '../../components/FlagImage';
 import { InstallPrompt } from '../../components/InstallPrompt';
+import { TrophyIcon } from '../../components/TrophyIcon';
 import { CasualPanel } from './CasualPanel';
 import { CompetitivePanel } from './CompetitivePanel';
 import styles from './PlayPage.module.css';
@@ -60,6 +61,8 @@ export function PlayPage({ tab }: { tab: PlayTab }) {
           Casual
         </NavLink>
         <NavLink to="/competitivo" className={tabClass} viewTransition>
+          {/* El trofeo hermana esta pestaña con el módulo Ranking (mismo glifo). */}
+          <TrophyIcon className={styles.tabIcon} />
           Competitivo
         </NavLink>
       </nav>

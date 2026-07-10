@@ -94,6 +94,16 @@
   color: var(--c-ink-2);
 }
 
+/* Trofeo de la pestaña Competitivo: hereda la tinta del estado (tinta clara en
+   reposo, tinta sobre amarillo al activarse) y es la seña compartida con el
+   módulo Ranking (mismo glifo en su cabecera). */
+.tabIcon {
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+  margin-right: var(--space-1);
+}
+
 /* Activa: pegatina amarilla despegada. El :hover explícito evita que
    .tab:hover pinte otro color sobre el amarillo. */
 .tabActive,

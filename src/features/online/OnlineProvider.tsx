@@ -14,6 +14,7 @@ import {
   fetchOwnProfile,
   insertProfile,
   invokeSubmit,
+  updateNickname,
 } from './api';
 import {
   classifySubmit,
@@ -208,6 +209,26 @@ export function OnlineProvider({ children }: { children: ReactNode }) {
     [sb, ensureSession, flushQueue],
   );
 
+  // Cambia el apodo del perfil YA existente (el sheet decide crear vs editar
+  // según haya perfil). Apodo distinto ⇒ el trigger asigna un #número nuevo.
+  const updateProfile = useCallback(
+    async (rawNickname: string): Promise<{ ok: boolean; error?: string }> => {
+      if (!sb) return { ok: false, error: 'El ranking necesita conexión.' };
+      if (!profile) return { ok: false, error: 'Aún no tienes apodo que cambiar.' };
+      const check = validateNickname(rawNickname);
+      if (!check.ok) return { ok: false, error: check.reason };
+      // Sin cambios: no gastar el viaje (y conservar el discriminador).
+      if (check.value === profile.nickname) return { ok: true };
+      const updated = await updateNickname(sb, profile.id, check.value);
+      if (!updated) {
+        return { ok: false, error: 'No se pudo guardar el apodo. Inténtalo de nuevo.' };
+      }
+      setProfile(updated);
+      return { ok: true };
+    },
+    [sb, profile],
+  );
+
   const submitResult = useCallback(
     async (result: GameResult): Promise<SubmitOutcome> => {
       if (!sb) return { kind: 'disabled' };
@@ -314,6 +335,7 @@ export function OnlineProvider({ children }: { children: ReactNode }) {
       sessionEmail,
       submitResult,
       createProfile,
+      updateProfile,
       linkGoogle,
       signInGoogle,
       onboardingOpen,
@@ -330,6 +352,7 @@ export function OnlineProvider({ children }: { children: ReactNode }) {
       sessionEmail,
       submitResult,
       createProfile,
+      updateProfile,
       linkGoogle,
       signInGoogle,
       onboardingOpen,

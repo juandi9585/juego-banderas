@@ -12,6 +12,27 @@
   margin-inline: calc(-1 * var(--space-4));
   background-image: var(--graticule);
   background-size: var(--graticule-size);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* Emblema del módulo: trofeo-pegatina ladeado en ámbar (mismo glifo que la
+   pestaña Competitivo de Jugar — la seña visual que une competir y consultar). */
+.emblem {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  font-size: 1.75rem; /* el glifo mide 1em */
+  color: var(--c-accent);
+  background: var(--c-surface);
+  border: var(--border-mid) solid var(--c-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transform: rotate(-5deg);
 }
 
 .eyebrow {
@@ -90,6 +111,13 @@
 
 .textLink:hover {
   color: var(--c-ink);
+}
+
+/* "Editar apodo" al borde derecho de la fila del perfil, sin comerse el apodo
+   (el nick trunca con ellipsis; este botón no se encoge). */
+.profileEdit {
+  flex: none;
+  margin-left: auto;
 }
 
 /* Error de conexión con Google (fallo inmediato antes del redirect). */
