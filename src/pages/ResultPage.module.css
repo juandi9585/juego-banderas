@@ -203,17 +203,71 @@
 }
 
 /* ── Resultado online (Fase C) ─────────────────────────────────────────────
-   Discreto, centrado bajo el panel de puntaje. Vacío mientras no hay respuesta
-   (o en offline): :empty lo saca del flujo del grid para no dejar un hueco. */
+   Discreto, centrado bajo el panel de puntaje. El dato llega tarde (viaje a la
+   Edge Function), así que RESERVAMOS su altura desde el primer paint con
+   min-height + align-content: center: el resultado se materializa dentro del
+   hueco en vez de insertarse y empujar "Para repasar"/botones. Solo colapsa
+   (:empty) cuando de verdad no hay nada que decir (discarded/skipped). */
 .online {
   display: grid;
   gap: var(--space-2);
   justify-items: center;
+  align-content: center;
+  min-height: 3.25rem;
   text-align: center;
 }
 
 .online:empty {
   display: none;
+  min-height: 0;
+}
+
+/* Placeholder mientras esperamos al servidor. Entra con retraso (200 ms): si la
+   respuesta llega antes, el usuario nunca lo ve — pero el hueco ya estaba
+   reservado, así que en ningún caso hay salto. `both` mantiene opacity:0 durante
+   el retraso; luego respira suave para señalar actividad. aria-hidden en el JSX. */
+.onlinePending {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--c-ink-3);
+  animation: onlinePending 1.6s var(--ease-standard) 200ms infinite both;
+}
+
+@keyframes onlinePending {
+  0% { opacity: 0; }
+  20% { opacity: 0.9; }
+  60% { opacity: 0.5; }
+  100% { opacity: 0.9; }
+}
+
+/* El resultado asienta en el sitio con un fundido y un empujoncito hacia arriba
+   (nada se mueve alrededor: el hueco ya existía). */
+.onlineResult {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  animation: onlineResultIn var(--dur-slow) var(--ease-out) both;
+}
+
+@keyframes onlineResultIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onlinePending {
+    animation: none;
+    opacity: 0.7;
+  }
+  .onlineResult {
+    animation: none;
+  }
 }
 
 .onlineRecord {

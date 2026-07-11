@@ -157,13 +157,20 @@ export function ResultPage() {
         )}
       </section>
 
-      {/* Resultado online, discreto. La región vive montada (isCompetitive) para
-          que el anuncio a lectores dispare cuando la respuesta asíncrona llega;
-          vacía cuando no hay nada que decir (offline/casual → sin caja). */}
-      {isCompetitive && (
+      {/* Resultado online, discreto. La región vive montada mientras el online
+          esté activo (flag SÍNCRONO) para reservar su hueco desde el primer
+          paint: el dato tardío se materializa EN el sitio en vez de insertarse y
+          empujar lo de abajo. `aria-live` anuncia solo el resultado (el
+          placeholder va aria-hidden). Vacía → :empty la colapsa (offline/casual). */}
+      {isCompetitive && online.enabled && (
         <div className={styles.online} aria-live="polite">
+          {onlineOutcome == null && (
+            <p className={styles.onlinePending} aria-hidden="true">
+              Calculando tu puesto…
+            </p>
+          )}
           {onlineOutcome?.kind === 'ok' && (
-            <>
+            <div className={styles.onlineResult}>
               {onlineOutcome.data.newRecord && (
                 <p className={styles.onlineRecord}>¡Récord online!</p>
               )}
@@ -175,22 +182,24 @@ export function ResultPage() {
                     : ''}
                 </p>
               )}
-            </>
+            </div>
           )}
           {onlineOutcome?.kind === 'needs-profile' && (
-            <>
+            <div className={styles.onlineResult}>
               <p className={styles.onlineNote}>
                 Crea un apodo para publicar tu marca en el ranking.
               </p>
               <Button variant="secondary" onClick={online.openOnboarding}>
                 Publicar en el ranking
               </Button>
-            </>
+            </div>
           )}
           {onlineOutcome?.kind === 'queued' && (
-            <p className={styles.onlineNote}>
-              Sin conexión. Tu marca se publicará cuando vuelvas a tenerla.
-            </p>
+            <div className={styles.onlineResult}>
+              <p className={styles.onlineNote}>
+                Sin conexión. Tu marca se publicará cuando vuelvas a tenerla.
+              </p>
+            </div>
           )}
         </div>
       )}
